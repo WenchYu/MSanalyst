@@ -1,4 +1,4 @@
-# Molecualr Networking Annotation (MNA)
+# Molecular Networking Annotation (MNA)
 This repository contains the original source code of MNA
 ![MNAlogo](MNA_logo.jpg)
 
