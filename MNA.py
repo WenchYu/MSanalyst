@@ -16,7 +16,7 @@ sys.path.append('./my_packages')
 
 import os
 import pandas as pd
-from tqdm import tqdm,trange
+from tqdm import trange
 from my_packages import functions
 from my_packages.ms2tools import spectral_entropy_calculating,ms1_match,ISDB_MS2_match,EDB_MS2_match,molecular_generation
 import argparse
@@ -25,10 +25,9 @@ import time
 
 def create_result_folders(args):
     '''
-
-    :param quant_file:
-    :param output_path:
-    :return:
+    :param quant_file: xxx_quant.csv
+    :param output_path: xxx.mgf
+    :return: folder creation
     '''
     df = pd.read_csv(args.quant_file)
     parent_folder = f'{args.output}/{os.path.splitext(os.path.basename(args.quant_file))[0]}_result'# 结果文件名output/_quant_result/**
@@ -40,13 +39,13 @@ def create_result_folders(args):
 
 def create_subresults(args):
     '''
-    拆分MS1match后的的按hits展开的结果文件
-    根据row ID，创建子csv,将对应的信息写入，便于后续仔细分析：in silico MS2
+    Split the results  after the MS1 match
+    Create a separate CSV for each row ID, writing the corresponding information to facilitate detailed inspection
     :param quant_file:
     :param ms1_match_file:
     :return:
     '''
-    parent_folder =  f'{args.output}/{os.path.splitext(os.path.basename(args.quant_file))[0]}_result' # 结果文件名output/_quant_result/**
+    parent_folder =  f'{args.output}/{os.path.splitext(os.path.basename(args.quant_file))[0]}_result' # filename ''output/_quant_result/**''
     npms1_result_path =os.path.join(parent_folder, f'npMS1match_{os.path.basename(args.quant_file)}')
     edbms1_result_path = os.path.join(parent_folder, f'edbMS1match_{os.path.basename(args.quant_file)}')
 
@@ -59,10 +58,10 @@ def create_subresults(args):
         id = quant_df['row ID'][i]
         folder_name = os.path.join(parent_folder, str(id))
 
-        npcsv_file = os.path.join(folder_name, f'npMS1match_{str(id)}.csv') # np result
+        npcsv_file = os.path.join(folder_name, f'npMS1match_{str(id)}.csv') # isdb results
         if not os.path.exists(npcsv_file):
             pd.DataFrame(columns=npms1_match_df.columns).to_csv(npcsv_file, index=False)
-        selected_rows =npms1_match_df.loc[npms1_match_df['row ID'] == id]# 选择与子文件夹名称匹配的DataFrame行，并将它们写入CSV文件
+        selected_rows =npms1_match_df.loc[npms1_match_df['row ID'] == id]
         with open(npcsv_file, 'a', newline='') as f1:
             selected_rows.to_csv(f1, index=False, header=False)
 
@@ -74,7 +73,7 @@ def create_subresults(args):
             selected_rows.to_csv(f2, index=False, header=False)
 
 def main(args):
-    '''1.创建结果文件夹'''
+    '''1.Folder creating'''
     create_result_folders(args)
     '''2.1Spectral entropy calculating'''
     spectral_entropy_calculating(args)
@@ -83,29 +82,19 @@ def main(args):
     ''' 4.MS2 match'''
     ISDB_MS2_match(args)
     EDB_MS2_match(args)
-    '''
-    5.将npMS1match和edbMS1match的结果写入对应row ID的子文件夹中
-    '''
+    '''5.将npMS1match和edbMS1match的结果写入对应row ID的子文件夹中'''
     create_subresults(args)
-    '''
-    6.分子网络生成
-    '''
+    '''6.Generating molecular networks'''
     molecular_generation(args)
-
-
 
 if __name__ == '__main__':
     t = time.time()
-    '''数据库文件'''
-
-    '''分析需提供的输入文件'''
-
 
     parser = argparse.ArgumentParser(prog='MNA'
                                      , description='Molecular networking annotation(MNA)'
                                      ,usage='python MNA.py main -q xxx_quant.csv -m xxx.mgf -o output_path'
                                      )
-    subparsers = parser.add_subparsers(help='sub-command help')  # 添加子命令
+    subparsers = parser.add_subparsers(help='sub-command help')
 
     '''subcommand : main'''
     parser_main = subparsers.add_parser('main', help='Default analysis workflow of MNA')
@@ -288,7 +277,7 @@ if __name__ == '__main__':
                            , default=0.7
                            )
     parser_mn.set_defaults(func=molecular_generation)
-    # 解析命令行参数并执行相应的子命令函数
+
     args = parser.parse_args()
     args.func(args)
     print(f'Finished in {(time.time() - t)/60:.2f}min')
