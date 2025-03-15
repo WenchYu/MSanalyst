@@ -13,7 +13,7 @@ from collections import Counter
 if __name__ == '__main__':
     t = time.time()
     '''Data importing'''
-    merge_file = '/data/MNAmerge.csv' # edb  and isdb match results
+    merge_file = '/data/msanalystmerge.csv' # edb  and isdb match results
     merge_df = pd.read_csv(merge_file)
     print(merge_df.columns)
 

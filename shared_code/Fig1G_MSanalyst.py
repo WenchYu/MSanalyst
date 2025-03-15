@@ -3,7 +3,7 @@
 # @Auther :Yuwenchao
 # @Software : PyCharm
 '''
-Confusion matrix of MNA results
+Confusion matrix of msanalyst results
 '''
 import os
 import time

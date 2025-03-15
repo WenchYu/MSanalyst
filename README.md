@@ -3,13 +3,19 @@ This repository contains the original source code of MSanalyst
 ![MSanalystlogo](MSanalyst_logo.jpg)
 
 # Installation
-## pip version
+Installing the stand-alone version from this repository
 ```bash
-pip install msanalyst
-```
-## docker version
-```bash
-docker pull
+# Downloading msanalyst library using command or manually
+wget --no-check-certificate 'https://drive.google.com/file/d/1w6HF3w1KIJlTz_QaVqqtN1BzkGDhDgzw/view?usp=sharing'
+
+# Cloning MSanalyst repository
+git clone git@github.com:WenchYu/MSanalyst.git && cd MSanalyst
+unzip msdb.zip -d ./ && rm msdb.zip
+
+# Creating environment
+conda create -n msanalyst python=3.8
+conda activate msanalyst
+pip install -r requirements.txt
 ```
 
 
@@ -65,11 +71,12 @@ python mn_merging.py -mn1 ./example/example_quant_result/example_modified_cosine
 ```
 
 ## Documentation
-Please see the [documentation](https://msanalyst.net/a/about) 
-and [video tutorials](https://msanalyst.net/a/about) for detailed instructions, parameter usage and more information.
-
+Please see the following links for detailed instructions, parameter usage and more information.
+- [Online documentation](https://msanalyst.net/a/about) 
+- [Video tutorials](https://msanalyst.net/a/about)
+- [MSanalyst library](https://drive.google.com/file/d/1w6HF3w1KIJlTz_QaVqqtN1BzkGDhDgzw/view)
 
 # 
 MSanalyst was carefully tested, bugs may appear. 
 Don't hesitate to contact us if you find any, or even better, send a pull request or open an issue. 
-For other inquiries, please send an email to 2112007282@zjut.edu.cn and we will be happy to answer you 😄.
+For other inquiries, please send an email to 2112007282@zjut.edu.cn and we will be happy to answer you.

@@ -3,7 +3,7 @@
 # @Auther :Yuwenchao
 # @Software : PyCharm
 '''
-Because MNA additionally uses peak percentage and in-silico library,
+Because msanalyst additionally uses peak percentage and in-silico library,
 the top 1 most similar result here is derived from the intersection of experimental and in-silico matches using peak percentage and modified cosine
 Calculating the maximum common structure (MCS) similarity between structure of query features and matches
 (High Similarity (>70%),Medium Similarity (45%-70%),Low Similarity (35%-45%), Not Similar (<35%), Not compared (under thresholds))
@@ -24,7 +24,7 @@ if __name__ == '__main__':
     thresholds = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
     mps = 5
 
-    os.chdir(f'/Users/hehe/Desktop/HTS/MNA/#std_mix/match_results_mna_10ppm/mps{mps}')
+    os.chdir(f'/Users/hehe/Desktop/HTS/msanalyst/#std_mix/match_results_msanalyst_10ppm/mps{mps}')
 
     for threshold in thresholds:
         isdb_pp_file = f'npMS1match_std_quant.csv_max_pp_{threshold}_{mps}.csv'
