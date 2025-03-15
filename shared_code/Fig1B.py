@@ -16,8 +16,8 @@ if __name__ == '__main__':
     file = '/data/LibSearch_top100_0.1.tsv'
     df = pd.read_csv(file, sep='\t', encoding='gbk') # GNPS
 
-    edb_file = '/data/edbMS1match_std_quant.csv' # msanalyst
-    isdb_file = '/data/npMS1match_std_quant.csv'
+    edb_file = '/data/E_MS1match_std_quant.csv' # msanalyst
+    isdb_file = '/data/IS_MS1match_std_quant.csv'
     edb_df = pd.read_csv(edb_file)
     isdb_df = pd.read_csv(isdb_file)
 

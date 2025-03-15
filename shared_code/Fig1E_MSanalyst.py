@@ -27,10 +27,10 @@ if __name__ == '__main__':
     os.chdir(f'/Users/hehe/Desktop/HTS/msanalyst/#std_mix/match_results_msanalyst_10ppm/mps{mps}')
 
     for threshold in thresholds:
-        isdb_pp_file = f'npMS1match_std_quant.csv_max_pp_{threshold}_{mps}.csv'
-        isdb_mq_file = f'npMS1match_std_quant.csv_max_sim_{threshold}_{mps}.csv'
-        edb_pp_file = f'edbMS1match_std_quant.csv_max_pp_{threshold}_{mps}.csv'
-        edb_mq_file = f'edbMS1match_std_quant.csv_max_sim_{threshold}_{mps}.csv'
+        isdb_pp_file = f'IS_MS1match_std_quant.csv_max_pp_{threshold}_{mps}.csv'
+        isdb_mq_file = f'IS_MS1match_std_quant.csv_max_sim_{threshold}_{mps}.csv'
+        edb_pp_file = f'E_MS1match_std_quant.csv_max_pp_{threshold}_{mps}.csv'
+        edb_mq_file = f'E_MS1match_std_quant.csv_max_sim_{threshold}_{mps}.csv'
 
         isdb_pp_df = pd.read_csv(isdb_pp_file)
         isdb_mq_df = pd.read_csv(isdb_mq_file)

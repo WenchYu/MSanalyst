@@ -36,8 +36,8 @@ def MSC(mol1, mol2):
 if __name__ == '__main__':
     t = time.time()
     '''Importing data'''
-    isdb_file = f'data/npMS1match_std_quant.csv'
-    edb_file = f'data/edbMS1match_std_quant.csv'
+    isdb_file = f'data/IS_MS1match_std_quant.csv'
+    edb_file = f'data/E_MS1match_std_quant.csv'
     isdb_df = pd.read_csv(isdb_file)
     edb_df = pd.read_csv(edb_file)
 

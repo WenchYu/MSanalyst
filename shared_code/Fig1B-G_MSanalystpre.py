@@ -20,7 +20,7 @@ if __name__ == '__main__':
     t = time.time()
 
     '''edb_file'''
-    mq_file = '/data/edbMS1match_std_quant.csv'
+    mq_file = './data/E_MS1match_std_quant.csv'
     mq_df = pd.read_csv(mq_file)
     type = 'max_pp' # 'max_sim'
     threshold = 0.9

@@ -16,7 +16,7 @@ from tqdm import tqdm
 if __name__ == '__main__':
     t = time.time()
 
-    file = '/data/LibSearch_top100_0.1.tsv'
+    file = './data/LibSearch_top100_0.1.tsv'
     df = pd.read_csv(file,sep = '\t',encoding='gbk')
     scans = list(Counter(df['#Scan#']))
     print(len(scans))
