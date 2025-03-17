@@ -1,0 +1,20 @@
+# conda install autode --channel conda-forge
+tqdm
+numpy
+pandas
+joblib
+networkx
+xmltodict
+spectrum-utils
+SpectralEntropy
+scipy
+scikit-learn
+seaborn
+
+
+
+
+
+
+
+
