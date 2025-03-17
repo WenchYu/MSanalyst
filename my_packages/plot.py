@@ -16,8 +16,8 @@ import numpy as np
 import spectrum_utils.plot as sup
 import spectrum_utils.spectrum as sus
 
-import similarity
-from similarity import spec_to_neutral_loss
+import peaktools
+from peaktools import spec_to_neutral_loss
 
 
 FragmentAnnotation = collections.namedtuple("FragmentAnnotation", ["ion_type"])

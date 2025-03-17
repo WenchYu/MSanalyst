@@ -19,6 +19,7 @@ import time
 
 
 Match = namedtuple('Match', ['peak1', 'peak2', 'score'])
+#可以用属性来引用tuple的某个元素
 Peak = namedtuple('Peak',['mz','intensity'])
 Alignment = namedtuple('Alignment', ['peak1', 'peak2'])
 
@@ -27,8 +28,8 @@ def convert_to_peaks(peak_tuples):
     Using the splat we can handle both size 2 lists and tuples
     :param peak_tuples: size 2 [[mz,intensity],...] or [(mz,intensity),...]
     :return:[Peak(mz=x, intensity=y),...,]
-    * tuple object，Positional arguments passed to function
-    ** dict object，Keyword arguments passed to functions
+    * 解包tuple对象，表示作为一个一个位置参数传入到函数中
+    ** 解包dict对象，表示作为一个一个关键词参数传入到函数
     '''
 
     return [Peak(*p) for p in peak_tuples]
@@ -82,7 +83,6 @@ def find_match_peaks_efficient(spec1, spec2, shift, tolerance):
         for j in range(left_bound_index,right_bound_index):
             alignment_mapping.append(Alignment(i,j))
     return alignment_mapping
-
 
 # Assumes that shift is equal to spec1 - spec2
 def find_match_peaks(spec1,spec2,shift,tolerance):

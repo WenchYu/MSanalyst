@@ -3,86 +3,77 @@
 # @Auther :Yuwenchao
 # @Software : PyCharm
 '''
-
-Basic Functions:
-    ex_content()
-    ex_startswith()
-    mirror_plotting()
-    calculate_ppm()
-    is_between()
+Basci Functions for MNA
 '''
 
 import os
-import re
 import ast
-import time
-import math
 import json
-import linecache
 import pandas as pd
 import numpy as np
 import spectrum_utils.spectrum as sus
 from collections import namedtuple
 
-
+def arrary2list(obj):
+    if isinstance(obj, np.ndarray):
+        return obj.tolist()
+    raise TypeError(f"Object of type {obj.__class__.__name__} is not JSON serializable")
 
 TopK=namedtuple('topk',['index','number'])
 def ex_startswith(file, start_txt):
     '''
-    因为原来是为了提取mgf中所有文件的信息，所以返回的是一个列表
-    使用了列表推到式，Extracting information after keyword as **float** or **str**
+    Extract lines starting with a specific keyword as **float** or **str**.
     :param filename: Path including suffix of the **text** file you intend to slice
     :param start_txt: Starting keyword
     :return: A list containing content after keywords
     '''
     with open(file, 'r') as f:
-        content=[line[len(start_txt):].rstrip() for line in f if line.startswith(start_txt)]
-        return content
+        content = [line[len(start_txt):].rstrip() for line in f if line.startswith(start_txt)]
+    return content
 
-def ex_content(filename,start_txt,end_txt):
+def create_result_folders(args):
     '''
-        根据关键词提取二级质谱 **float**
+    Create result folders based on the quant file
+    '''
+    df = pd.read_csv(args.quant_file)
+    parent_folder = f'{args.output}/{os.path.splitext(os.path.basename(args.quant_file))[0]}_result'# 结果文件名output/_quant_result/**
+    os.makedirs(parent_folder, exist_ok=True)
+    for _, row in df.iterrows():
+        folder_name = f"{parent_folder}/{int(row['row ID'])}"
+        os.makedirs(folder_name, exist_ok=True)
+    print('Result folders have been created!')
 
-        :param filename: Path including suffix of the **text** file you intend to slice
-        :param start_txt: Starting keyword
-        :param end_txt: Ending Keyword
-        :return: A list contain lists of sliced content, like[[],[],...,[]]
-        '''
-    start_num = []
-    end_num = []
-    dest_content=[]
-    linenumber = 1
-    with open ('{}'.format(filename),'r') as f:
-        for eachline in f:
-            s=re.match(start_txt,eachline)# 使用正则表达式匹配每行内容
-            e=re.search(end_txt,eachline)
-            if s is not None:# 如果不为None，将当前行号添加到 start_num 列表中
-                start_num.append(linenumber)
-            elif e is not None:
-                end_num.append(linenumber)
-            linenumber+=1
-        index=list(zip(start_num,end_num))
-        index_size=len(index)
-        for i in range(index_size):
-            start=index[i][0]# 获取元组中的起始行行号
-            end=index[i][1]# 获取元组中的结束行行号
-            destlines=[]# 创建一个空列表 destlines，用来存储提取出的目标行的内容
-            try:# 尝试使用行号获取对应的行内容
-                if 'MERGED' in linecache.getlines(filename)[start]:# 判断当前行是否包含字符串'MERGED'
-                    cache_destlines =linecache.getlines(filename)[start + 1:end - 1]
-                    for destline in cache_destlines:
-                        destlines.append([float(destline.rstrip().split(' ')[0]),float(destline.rstrip().split(' ')[1])])
-                else:
-                    cache_destlines = linecache.getlines(filename)[start:end - 1]
-                    for destline in cache_destlines:
-                        destlines.append([float(destline.rstrip().split(' ')[0]), float(destline.rstrip().split(' ')[1])])
-            except:
-                cache_destlines = linecache.getlines(filename)[start:end - 1]
-                for destline in cache_destlines:
-                    destlines.append([float(destline.rstrip().split('\t')[0]), float(destline.rstrip().split('\t')[1])])
+def create_subresults(args):
+    '''
+    Split the results  after the MS1 match
+    Create a separate CSV for each row ID, writing the corresponding information to facilitate detailed inspection
+    '''
+    parent_folder =  f'{args.output}/{os.path.splitext(os.path.basename(args.quant_file))[0]}_result' # filename ''output/_quant_result/**''
+    npms1_result_path =os.path.join(parent_folder, f'IS_MS1match_{os.path.basename(args.quant_file)}')
+    edbms1_result_path = os.path.join(parent_folder, f'E_MS1match_{os.path.basename(args.quant_file)}')
 
-            dest_content.append(destlines)
-        return  dest_content
+    quant_df = df_preprocess(args.quant_file)
+    npms1_match_df = df_preprocess(npms1_result_path)
+    edbms1_match_df = df_preprocess(edbms1_result_path)
+
+
+    for i in range(len(quant_df)):
+        id = quant_df['row ID'][i]
+        folder_name = os.path.join(parent_folder, str(id))
+
+        npcsv_file = os.path.join(folder_name, f'IS_MS1match_{str(id)}.csv') # isdb results
+        if not os.path.exists(npcsv_file):
+            pd.DataFrame(columns=npms1_match_df.columns).to_csv(npcsv_file, index=False)
+        selected_rows =npms1_match_df.loc[npms1_match_df['row ID'] == id]
+        with open(npcsv_file, 'a', newline='') as f1:
+            selected_rows.to_csv(f1, index=False, header=False)
+
+        edbcsv_file = os.path.join(folder_name, f'E_MS1match_{str(id)}.csv') # edb result
+        if not os.path.exists(edbcsv_file):
+            pd.DataFrame(columns=edbms1_match_df.columns).to_csv(edbcsv_file, index=False)
+        selected_rows = edbms1_match_df.loc[edbms1_match_df['row ID'] == id]
+        with open(edbcsv_file, 'a', newline='') as f2:
+            selected_rows.to_csv(f2, index=False, header=False)
 
 def ex_spectra(file, start_txt, end_txt, skip_words=None):
     '''
@@ -118,12 +109,11 @@ def ex_spectra(file, start_txt, end_txt, skip_words=None):
 
 def mgf_process(mgf_file):
     '''
-    提取mgf文件中的'FEATURE_ID=', 'PEPMASS=', 和二级质谱
+    Process MGF file to extract relevant information.
     :param mgf_file:
     :return: id<str> pepmass<str>, ms2<np array>
     '''
     id_txt = 'FEATURE_ID='
-    # id_txt = 'TITLE='
     id = ex_startswith(mgf_file, id_txt)
 
     pepmass_txt = 'PEPMASS='
@@ -134,26 +124,47 @@ def mgf_process(mgf_file):
     charge = [s.replace('+', '') for s in charge]
 
     start_txt = 'MSLEVEL=2'
-    # start_txt = 'CHARGE'
     end_txt = 'END'
     ms2 = ex_spectra(mgf_file, start_txt, end_txt, skip_words=['MERGED'])
 
-    # 储存成dataframe，读取更快
     exp_info = pd.DataFrame({
         'id': id
         ,'pepmass': pepmass
         ,'charge' : charge
         ,'ms2': ms2
     })
-    # 使用apply方法检查每个列表是否为空
-    exp_info = exp_info[exp_info['ms2'].apply(len) > 1]  # 删除空列表
-    exp_info = exp_info.reset_index(drop=True)  # 重新编写索引
-
+    exp_info = exp_info[exp_info['ms2'].apply(len) > 1]  # delete empty list
+    exp_info = exp_info.reset_index(drop=True)  # reindex
     return exp_info
+
+def spectra_process(qms1,qms2):
+        id='1'
+        pepmass= qms1
+        charge='1'
+
+        spectra = []
+        temp = []
+        lines = qms2.strip().split('\n')
+        for line in lines:
+            m_z, intensity = line.split()
+            temp.append([float(m_z), float(intensity)])
+        temp = np.array(temp, dtype=np.float64)
+        spectra.append(temp)
+
+
+        exp_info = pd.DataFrame({
+            'id': id
+            , 'pepmass': pepmass
+            , 'charge': charge
+            , 'ms2': spectra
+        })
+        exp_info = exp_info[exp_info['ms2'].apply(len) > 1]  # delete empty list
+        exp_info = exp_info.reset_index(drop=True)
+        return exp_info
 
 def get_mgf_info(mgf_info,mgf_id):
     '''
-
+    Retrieve information from MGF file based on ID.
     :param mgf_info:
     :param id:
     :return:pepmass<float>, spec<np.adarray>, spectrum<spectrum_utils object>
@@ -237,57 +248,45 @@ def get_isdb_info(isdb_info, is_id):
 
 def df_preprocess(filename):
     '''
-    标准化dataframe ： 删除空列，标准化index
-    :param filename:
-    :return:
+    Preprocess DataFrame by removing empty columns and resetting index.
     '''
-    # 读取CSV文件
-    df = pd.read_csv(filename,low_memory=False)
-
-    # 删除空列
-    # df = df.dropna(axis=1, how='all',subset = None)
+    if filename.endswith('.csv'):
+        df = pd.read_csv(filename, low_memory=False)
+    elif filename.endswith('.tsv'):
+        df = pd.read_csv(filename, sep='\t', low_memory=False)
+    elif filename.endswith('.xlsx') or filename.endswith('.xls'):
+        df = pd.read_excel(filename)
+    else:
+        raise ValueError("Unsupported file format. Please use .csv, .tsv, or .xlsx files.")
 
     if  df.index[-1] != len(df)-1:
         df.index.name = ''
         df.reset_index(inplace=True)
-
-    # 返回DataFrame
     return df
 
 def calculate_ppm(query_mass_value: float, reference_mass_value: float) -> float:
     '''
-    Calculate parts per million (ppm) for query and reference mass values.
-
-    :param query_mass_value: The mass value of the query
-    :param reference_mass_value: The mass value of the reference
-    :return: The ppm value
+    Calculate parts per million (ppm) for mass values.
     '''
     if not isinstance(query_mass_value, (int, float)) or not isinstance(reference_mass_value, (int, float)):
         raise TypeError('Input parameters must be numbers.')
-
     if reference_mass_value != 0:
-        ppm = abs((query_mass_value - reference_mass_value) / reference_mass_value * 1e6)
-    else:
-        ppm = math.inf
-
-    return ppm
+        return abs((query_mass_value - reference_mass_value) / reference_mass_value * 1e6)
+    return float('inf')
 
 def db_parsing():
     '''
-    默认方式解析数据库
-    :return:
+    Parse default databases of MSanalyst.
     '''
     isdb_file = './msdb/isdb_info.json'
-    gnps_file = './msdb/edb_info.json'
+    edb_file = './msdb/edb_info.json'
     with open(isdb_file, 'r') as f:
         isdb_info = json.load(f)
-
-    with open(gnps_file, 'r') as f1:
+    with open(edb_file, 'r') as f1:
         gnps_info = json.load(f1)
     return isdb_info, gnps_info
+
+
+
 if __name__ == '__main__':
-    t = time.time()
-    os.chdir('/Users/hehe/desktop')
-
-
-    print(f'居然花了:{(time.time() - t)/60:.2f}s')
+    print('')

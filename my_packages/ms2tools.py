@@ -19,10 +19,7 @@ from tqdm import tqdm, trange
 from joblib import Parallel, delayed
 from spectral_entropy import similarity
 from my_packages import functions
-from my_packages import spectrum_alignment
-from my_packages.spectrum_alignment import find_match_peaks_efficient, convert_to_peaks
-from my_packages.similarity import modified_cosine, neutral_loss
-
+from my_packages.peaktools import neutral_loss,modified_cosine,find_match_peaks_efficient,convert_to_peaks
 
 def match_mz(quant_df_row, msdb_df, mz_column='row m/z',np_ms1_match_threshld = 5):
     '''
@@ -62,15 +59,27 @@ def match_edb_mz(quant_df_row,edb_df,mz_column='row m/z',edb_ms1_match_threshold
         hits_smiles.append(None)
     return hits_id, hits_smiles
 
-def ms1_match(args):
+def ms1_match(args,queryDF = None):
     '''MS1 match against the entire MNA MS1 library'''
     np_ppm = args.pepmass_match_tolerance
     edb_ppm = args.pepmass_match_tolerance
-    np_msdb_df = pd.read_csv(args.npms1_file,low_memory=False)
+    np_msdb_df = pd.read_csv(args.isms1_file,low_memory=False)
     edb_df = functions.df_preprocess(args.edbms1_file)
-    quant_df = functions.df_preprocess(args.quant_file)
+    if queryDF is None:
+        query = args.quant_file
+        quant_df = functions.df_preprocess(query)
+        quant_name = os.path.splitext(os.path.basename(args.quant_file))[0]
+        result_dir = os.path.join(args.output, f'{quant_name}_result')
+        os.makedirs(result_dir, exist_ok=True)
+        basename = os.path.basename(args.quant_file)
+    else:
+        quant_df= queryDF
+        query_mz = str(queryDF.iloc[0,1])
+        result_dir = query_mz
+        os.makedirs(result_dir, exist_ok=True)
+        basename = f'{query_mz}.csv'
 
-    n_jobs = os.cpu_count()
+    n_jobs = args.cpus
     np_results = Parallel(n_jobs=n_jobs)(
         delayed(match_mz)(quant_df_row, np_msdb_df,np_ms1_match_threshld = np_ppm) for quant_df_row in tqdm(quant_df.to_dict('records')))
 
@@ -92,11 +101,10 @@ def ms1_match(args):
             edb_match_rows.append(edb_match_row)
     edb_match_df = pd.DataFrame(edb_match_rows)
 
-    quant_name = os.path.splitext(os.path.basename(args.quant_file))[0]
-    result_dir = os.path.join(args.output, f'{quant_name}_result')
-    os.makedirs(result_dir, exist_ok=True)
-    np_result_path = os.path.join(result_dir, f'npMS1match_{os.path.basename(args.quant_file)}')
-    edb_result_path = os.path.join(result_dir, f'edbMS1match_{os.path.basename(args.quant_file)}')
+    '''Output'''
+
+    np_result_path = os.path.join(result_dir, f'IS_MS1match_{os.path.basename(basename)}')
+    edb_result_path = os.path.join(result_dir, f'E_MS1match_{os.path.basename(basename)}')
 
     np_match_df.to_csv(np_result_path, index=False)
     edb_match_df.to_csv(edb_result_path, index=False)
@@ -115,21 +123,32 @@ def ms1_match(args):
             quant_df.at[i, 'edbms1_id'] = ';'.join([x or '' for x in hits_id])
             quant_df.at[i, 'edbms1_smiles'] = ';'.join(hits_smiles)
 
-    ms1_result_path = os.path.join(result_dir, f'MS1match_{os.path.basename(args.quant_file)}')
+    ms1_result_path = os.path.join(result_dir, f'MS1match_{basename}')
     quant_df.to_csv(ms1_result_path, index=False)
     print('MS1 matching finished!')
 
-def ISDB_MS2_match(args):
+def ISDB_MS2_match(args,queryMGF=None):
     ''' MS2 match against MNA in-silico MS2 library '''
-    with open(args.isdb_file) as f:
+    if queryMGF is None:
+        mgf_file = args.mgf_file
+        quant_name = os.path.splitext(os.path.basename(args.quant_file))[0]
+        result_dir = os.path.join(args.output, f'{quant_name}_result')
+        os.makedirs(result_dir, exist_ok=True)
+        basename = os.path.basename(args.quant_file)
+        exp_info = functions.mgf_process(mgf_file)
+    else:
+        spectra_info = queryMGF
+        query_mz = spectra_info.loc[0,'pepmass']
+        result_dir = query_mz
+        os.makedirs(result_dir, exist_ok=True)
+        basename = f'{query_mz}.csv'
+        exp_info = queryMGF
+
+    '''Loading in-silico library'''
+    with open(args.isms2_file) as f:
         isdb_info = json.load(f)
 
-    exp_info = functions.mgf_process(args.mgf_file)
-    quant_name = os.path.splitext(os.path.basename(args.quant_file))[0]
-    parent_dir = os.path.join(args.output, f'{quant_name}_result')
-    os.makedirs(parent_dir, exist_ok=True)
-
-    np_result_path = os.path.join(parent_dir, f'npMS1match_{os.path.basename(args.quant_file)}')
+    np_result_path = os.path.join(result_dir, f'IS_MS1match_{basename}')
     np_ms1_match_df = functions.df_preprocess(np_result_path)
 
     np_ms1_match_df['mps0'] = np.nan
@@ -182,7 +201,7 @@ def ISDB_MS2_match(args):
                 sim0, sim1, sim2 = 0.0, 0.0, 0.0
                 mps0, mps1, mps2 = 0, 0, 0
                 pp0, pp1, pp2 = 0.0, 0.0, 0.0
-                if args.library_matching_method == 'modified_cosine_similarity':
+                if args.library_matching_method == 'modified_cosine':
                     try:
                         result0 = modified_cosine(exp_spectrum, e0_spectrum, fragment_mz_tolerance=0.05)
                         sim0 = result0.score
@@ -199,7 +218,7 @@ def ISDB_MS2_match(args):
                     except:
                         pass
 
-                elif args.library_matching_method == 'netural_loss':
+                elif args.library_matching_method == 'neutral_loss':
                     try:
                         result0 = neutral_loss(exp_spectrum, e0_spectrum, fragment_mz_tolerance=0.05)
                         sim0 = result0.score
@@ -238,7 +257,7 @@ def ISDB_MS2_match(args):
                 np_ms1_match_df.loc[i, 'pair_similarity2'] = sim2
                 np_ms1_match_df.loc[i, 'mps2'] = mps2
                 np_ms1_match_df.loc[i, 'pp2'] = pp2
-                is_ms2_path = os.path.join(parent_dir, row_id, f'{match_id}.mgf')
+                is_ms2_path = os.path.join(result_dir, row_id, f'{match_id}.mgf')
                 with open(is_ms2_path, 'w') as f:
                     f.write('BEGIN IONS\n')
                     f.write(f'ID={match_id}\n')
@@ -258,19 +277,29 @@ def ISDB_MS2_match(args):
                 pass
     np_ms1_match_df.to_csv(np_result_path)
 
-def EDB_MS2_match(args):
+def EDB_MS2_match(args,queryMGF=None):
     ''' MS2 match against MNA experimental MS2 library '''
+    if queryMGF is None:
+        mgf_file = args.mgf_file
+        quant_name = os.path.splitext(os.path.basename(args.quant_file))[0]
+        result_dir = os.path.join(args.output, f'{quant_name}_result')
+        os.makedirs(result_dir, exist_ok=True)
+        basename = os.path.basename(args.quant_file)
+
+        exp_info = functions.mgf_process(args.mgf_file)
+    else:
+        spectra_info = queryMGF
+        query_mz = spectra_info.loc[0,'pepmass']
+        result_dir = query_mz
+        os.makedirs(result_dir, exist_ok=True)
+        basename = f'{query_mz}.csv'
+        exp_info = queryMGF
+
     with open (args.edbms2_file,'r') as f:
         edbms2_info=json.load(f) # EDB_MS2 json file
 
-
-    quant_name = os.path.splitext(os.path.basename(args.quant_file))[0]
-    parent_dir = os.path.join(args.output, f'{quant_name}_result') # 结果文件夹路径 ：output/example_quant/
-    os.makedirs(parent_dir, exist_ok=True)
-
-    edb_result_path = os.path.join(parent_dir, f'edbMS1match_{os.path.basename(args.quant_file)}')
-    edb_ms1_df = functions.df_preprocess(edb_result_path) # GNPS_shared_code MS1 match result
-    exp_info = functions.mgf_process(args.mgf_file)
+    edb_result_path = os.path.join(result_dir, f'E_MS1match_{basename}')
+    edb_ms1_df = functions.df_preprocess(edb_result_path) # EDB MS1 match result
 
     edb_ms1_df['mps'] = np.nan
     edb_ms1_df['pair_similarity'] = np.nan
@@ -279,7 +308,7 @@ def EDB_MS2_match(args):
         row_id = str(edb_ms1_df.loc[i,'row ID'])
         match_id = str(edb_ms1_df.loc[i,'match_id'])
         if match_id != 'nan':
-            try:  # quant.csv中的有些feature，没有二级,先用try:except顶着
+            try:  # some feautres without ms2
                 exp_pm = float(exp_info[exp_info['id'] == row_id].pepmass.iloc[0])
                 exp_ms2 = exp_info[exp_info['id'] == row_id].ms2.iloc[0]
                 exp_ms2 = spectral_entropy.clean_spectrum(exp_ms2, max_mz=exp_pm+0.01)
@@ -304,7 +333,7 @@ def EDB_MS2_match(args):
                 sim = 0.0
                 mps = 0
                 pp = 0.0
-                if args.library_matching_method == 'modified_cosine_similarity':
+                if args.library_matching_method == 'modified_cosine':
                     try:
                         result = modified_cosine(exp_spectrum, edb_spectrum, fragment_mz_tolerance=0.05)
                         sim = result.score
@@ -313,7 +342,7 @@ def EDB_MS2_match(args):
                     except:
                         pass
 
-                elif args.library_matching_method == 'netural_loss':
+                elif args.library_matching_method == 'neutral_loss':
                     try:
                         result = neutral_loss(exp_spectrum, edb_spectrum, fragment_mz_tolerance=0.05)
                         sim = result.score
@@ -331,7 +360,7 @@ def EDB_MS2_match(args):
                 edb_ms1_df.loc[i, 'mps'] = mps
                 edb_ms1_df.loc[i,'pp'] = pp
 
-                edb_ms2_path = os.path.join(parent_dir, row_id, f'{match_id}.mgf')
+                edb_ms2_path = os.path.join(result_dir, row_id, f'{match_id}.mgf')
                 with open(edb_ms2_path, 'w') as f:
                     f.write('BEGIN IONS\n')
                     f.write(f'ID={match_id}\n')
@@ -417,7 +446,7 @@ def self_clustering(args):
             sim = 0.0
             mps = 0
             pp = 0.0
-            if args.self_clustering_method == 'modified_cosine_similarity':
+            if args.self_clustering_method == 'modified_cosine':
                 try:
                     result = modified_cosine(spectrum1,spectrum2,fragment_mz_tolerance=0.02)
                     sim = result.score
@@ -439,9 +468,9 @@ def self_clustering(args):
                 try:
                     sim = similarity(spec1, spec2, method=args.self_clustering_method, ms2_ppm=10 ,ms2_da = 0.05)
                     mps = len(
-                        spectrum_alignment.find_match_peaks_efficient(
-                            spectrum_alignment.convert_to_peaks(spec1)
-                            , spectrum_alignment.convert_to_peaks(spec2)
+                        find_match_peaks_efficient(
+                            convert_to_peaks(spec1)
+                            , convert_to_peaks(spec2)
                             , shift = shift
                             , tolerance=0.02)
                             )
@@ -535,8 +564,8 @@ def molecular_generation(args):
     G = mn_curating(G, args.top_k)
     print('Self clustering finished!')
 
-    # '''Class C1/C2 : NP ms2 match result '''
-    npms1_result_path = os.path.join(parent_folder, f'npMS1match_{os.path.basename(args.quant_file)}')
+    # '''Class C1/C2 : ISDB ms2 match result '''
+    npms1_result_path = os.path.join(parent_folder, f'IS_MS1match_{os.path.basename(args.quant_file)}')
     npms1_match_df = functions.df_preprocess(npms1_result_path)
 
     npms1_match_df['pair_similarity'] = np.nan
@@ -561,7 +590,7 @@ def molecular_generation(args):
     index_match, index_pp_match = [], []
     index_unmatch = []
 
-    for j in row_ids:  # traverse npMS1match_result by id
+    for j in row_ids:  # traverse IS_MS1match_result by id
         temp_df = npms1_match_df[npms1_match_df['row ID'] == j]
         sim_idx = temp_df['pair_similarity'].idxmax()  # get index of maximum pair_similarity
         pp_idx = temp_df['pp'].idxmax()  # get index of maximum peak_percentage
@@ -618,7 +647,7 @@ def molecular_generation(args):
         G.nodes[spec2_id]['smile'] = df_new_pp_match_well.loc[i, 'match_smiles']
 
     '''Class B1/B2 : GNPS_shared_code ms2 match result '''
-    edbms1_result_path = os.path.join(parent_folder, f'edbMS1match_{os.path.basename(args.quant_file)}')
+    edbms1_result_path = os.path.join(parent_folder, f'E_MS1match_{os.path.basename(args.quant_file)}')
     edbms1_match_df = functions.df_preprocess(edbms1_result_path)
 
     edb_index_match, edb_pp_index_match = [], []
