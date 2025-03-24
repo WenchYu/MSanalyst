@@ -1,9 +1,9 @@
 # MSanalyst
-This repository contains the original source code of MSanalyst
+This repository contains the original source code of MSanalyst. 
 ![MSanalystlogo](MSanalyst_logo.jpg)
 
 # Installation
-Installing the stand-alone version from this repository
+You can use the [online version](https://msanalyst.net/) or installing the stand-alone version from this repository
 ```bash
 # Downloading msanalyst library using command or manually
 wget --no-check-certificate 'https://drive.google.com/file/d/1w6HF3w1KIJlTz_QaVqqtN1BzkGDhDgzw/view?usp=sharing'
@@ -77,6 +77,5 @@ Please see the following links for detailed instructions, parameter usage and mo
 - [MSanalyst library](https://drive.google.com/file/d/1w6HF3w1KIJlTz_QaVqqtN1BzkGDhDgzw/view)
 
 # 
-MSanalyst was carefully tested, bugs may appear. 
-Don't hesitate to contact us if you find any, or even better, send a pull request or open an issue. 
-For other inquiries, please send an email to 2112007282@zjut.edu.cn and we will be happy to answer you.
+MSanalyst was carefully tested, bugs may appear. Don't hesitate to contact us or open an issue. 
+For other inquiries, please email us and we will be happy to answer you.
