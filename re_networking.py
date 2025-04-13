@@ -10,7 +10,9 @@ import argparse
 from my_packages import ms2tools, config
 
 def re_networking(args):
-    ms2tools.molecular_generation(args)
+    MN_file = ms2tools.molecular_generation(args)
+    return MN_file
+    
 
 if __name__ == '__main__':
     args = config.args

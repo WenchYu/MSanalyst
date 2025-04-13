@@ -1,0 +1,149 @@
+
+'''
+
+'''
+import time
+import numpy as np
+import pandas as pd
+from collections import Counter
+from tqdm import tqdm, trange
+from rdkit import Chem
+from rdkit.Chem import rdFMCS
+from collections import Counter
+from tqdm import tqdm,trange
+
+def MSC(mol1, mol2):
+
+    mcs = rdFMCS.FindMCS([mol1, mol2]
+                         , bondCompare=rdFMCS.BondCompare.CompareOrder
+                         , atomCompare=rdFMCS.AtomCompare.CompareAny
+                         , maximizeBonds = False
+                         , ringMatchesRingOnly=False
+                         , matchValences=False
+                         , timeout=10
+                         )
+
+    mcs_num_bonds = mcs.numBonds
+    mol1_num_bonds = mol1.GetNumBonds()
+    mol2_num_bonds = mol2.GetNumBonds()
+
+    similarity = mcs_num_bonds / ((mol1_num_bonds + mol2_num_bonds) - mcs_num_bonds)
+    return similarity
+
+if __name__ == '__main__':
+    t = time.time()
+
+    # Loading the MSanalyst matching results
+    # isdb_file = f'./data/IS_MS1match_std_quant.csv'
+    # edb_file = f'./data/E_MS1match_std_quant.csv'
+    # isdb_df = pd.read_csv(isdb_file)
+    # edb_df = pd.read_csv(edb_file)
+    #
+    # ## Process the IS_match results and take the maximum value of pp and pair_simialrity in each row
+    # isdb_df['pair_similarity'] = np.nan
+    # isdb_df['mps'] = np.nan
+    # isdb_df['pp'] = np.nan
+    # for j in trange(len(isdb_df)):
+    #     pairs = [
+    #             (isdb_df.loc[j, 'mps0'], isdb_df.loc[j, 'pair_similarity0'], isdb_df.loc[j, 'pp0']),
+    #             (isdb_df.loc[j, 'mps1'], isdb_df.loc[j, 'pair_similarity1'], isdb_df.loc[j, 'pp1']),
+    #             (isdb_df.loc[j, 'mps2'], isdb_df.loc[j, 'pair_similarity2'], isdb_df.loc[j, 'pp2'])]
+    #
+    #     # Find the maximum pair_similarity in (mps, pair_similarity) pair
+    #     max_sim_pair = max(pairs, key=lambda x: x[1]) # [0] mps [1] pair_similarity [2] pp
+    #     isdb_df.loc[j, 'mps'] = max_sim_pair[0]
+    #     isdb_df.loc[j, 'pair_similarity'] = max_sim_pair[1]  # Retrieve the maximum mps and pair_similarity values
+    #
+    #     # Find the the maximum pp in (mps, pp) pair
+    #     max_pp_pair = max(pairs, key=lambda x: x[2])  # [0] mps [1] pair_similarity [2] pp
+    #     isdb_df.loc[j, 'pp'] = max_sim_pair[2]  # Retrieve the maximum mps and pair_similarity values
+    #
+    # # isdb_df.to_csv('test.csv',index=None)
+    #
+    # columns_to_merge = ['row ID', 'smiles','match_smiles', 'pair_similarity', 'mps', 'pp']
+    # merged_data = pd.concat(
+    #     [isdb_df[columns_to_merge], edb_df[columns_to_merge]], axis=0)
+    #
+    # # # Filter edb and isdb match results, the maximum value of pp and pair similarity, retain the corresponding index, and calculate MCS'''
+    # scans = list(Counter(isdb_df['row ID']))
+    # edb_index_to_keep = []
+    # isdb_index_to_keep = []
+    # for i in tqdm(scans, total = len(scans)):
+    #     slice_edb_df = edb_df[edb_df['row ID'] == i]
+    #     max_sim_index1 = slice_edb_df['pair_similarity'].idxmax()
+    #     max_pp_index1 = slice_edb_df['pp'].idxmax()
+    #     edb_index_to_keep.append(max_sim_index1)
+    #     edb_index_to_keep.append(max_pp_index1)
+    #
+    #     slice_isdb_df = isdb_df[isdb_df['row ID'] == i]
+    #     max_sim_index2 = slice_isdb_df['pair_similarity'].idxmax()
+    #     max_pp_index2 = slice_isdb_df['pp'].idxmax()
+    #     isdb_index_to_keep.append(max_sim_index2)
+    #     isdb_index_to_keep.append(max_pp_index2)
+    #
+    # edb_index_to_keep = list(set(edb_index_to_keep)) # Deduplication of index
+    # isdb_index_to_keep = list(set(isdb_index_to_keep))
+    # edb_filtered = edb_df.loc[edb_index_to_keep].reset_index(drop=True)
+    # isdb_filtered = isdb_df.loc[isdb_index_to_keep].reset_index(drop=True)
+    #
+    # # MCS similarity calculation
+    # edb_filtered['mcs'] = np.nan
+    # isdb_filtered['mcs'] = np.nan
+    # for i in trange(len(edb_filtered)):
+    #     smile1 = edb_filtered.loc[i,'smiles']
+    #     mol1 = Chem.MolFromSmiles(smile1)
+    #     smile2 = edb_filtered.loc[i,'match_smiles']
+    #     mol2 = Chem.MolFromSmiles(smile2)
+    #     edb_filtered.loc[i,'mcs'] = MSC(mol1,mol2)
+    #
+    # for j in trange(len(isdb_filtered)):
+    #     smile1 = isdb_filtered.loc[j,'smiles']
+    #     mol1= Chem.MolFromSmiles(smile1)
+    #     smile2 = isdb_filtered.loc[j,'match_smiles']
+    #     mol2 = Chem.MolFromSmiles(smile2)
+    #     isdb_filtered.loc[j,'mcs'] =MSC(mol1,mol2)
+
+    # # MCS calculation takes a long time, save the result here
+    # edb_filtered.to_csv('edb_fil.csv',index=None)
+    # isdb_filtered.to_csv('isdb_fil.csv',index=None)
+
+
+    '''
+    First merge the results of edb and isdb to calculate mcs.
+    And then count the number of confusion matrices.
+    '''
+    edb_filtered = pd.read_csv('./data/edb_fil.csv')
+    isdb_filered = pd.read_csv('./data/isdb_fil.csv')
+
+    columns_to_merge = ['row ID', 'pair_similarity', 'mps', 'pp','mcs']
+    merged_data = pd.concat(
+        [edb_filtered[columns_to_merge], isdb_filered[columns_to_merge]], axis=0)
+
+
+    # Filtering by spectral similarity and matched peaks
+    scans = list(Counter(edb_filtered['row ID'])) # get a list of annotated features
+    threshold = 0.7
+    mps = 5
+    df_selected = merged_data[((merged_data['pair_similarity'] >= threshold) & (merged_data['mps']>=mps))|(
+            (merged_data['pp']>=threshold)&(merged_data['mps']>=mps))]
+    df_unselected = merged_data[~(((merged_data['pair_similarity'] >= threshold) & (merged_data['mps'] >= mps)) | (
+                (merged_data['pp'] >= threshold) & (merged_data['mps'] >= mps)))]
+
+    # FP,TP,TN,FN are used for visualization
+    scans_selected = list(Counter(df_selected['row ID']))
+    max_selected= []
+    for i in tqdm(scans_selected,total = len(scans_selected)):
+        df_slice = df_selected[df_selected['row ID'] == i]
+        max_selected.append(max(df_slice['mcs']))
+    print('FP:',sum(i < 0.35 for i in max_selected)
+          ,'TP',sum(i >= 0.7 for i in max_selected))
+
+    scans_unselected = [x for x in list(Counter(df_unselected['row ID'])) if x not in scans_selected]
+    max_unselected = []
+    for i in tqdm(scans_unselected, total=len(scans_unselected)):
+        df_slice = df_unselected[df_unselected['row ID'] == i]
+        max_unselected.append(max(df_slice['mcs']))
+    print('TN:', sum(i < 0.35 for i in max_unselected)
+          , 'FN', sum(i >= 0.7 for i in max_unselected))
+
+    print(f'Finished in {(time.time() - t) / 60:.2f} min')

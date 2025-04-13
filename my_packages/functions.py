@@ -1,9 +1,6 @@
-# -*- coding: utf-8 -*-
-# @Time :2022/6/17 23:03
-# @Auther :Yuwenchao
-# @Software : PyCharm
+
 '''
-Basci Functions for MNA
+Basic Functions for MSanalyst
 '''
 
 import os
@@ -36,7 +33,7 @@ def create_result_folders(args):
     Create result folders based on the quant file
     '''
     df = pd.read_csv(args.quant_file)
-    parent_folder = f'{args.output}/{os.path.splitext(os.path.basename(args.quant_file))[0]}_result'# 结果文件名output/_quant_result/**
+    parent_folder = f'{args.output}/{os.path.splitext(os.path.basename(args.quant_file))[0]}_result'# output/_quant_result/**
     os.makedirs(parent_folder, exist_ok=True)
     for _, row in df.iterrows():
         folder_name = f"{parent_folder}/{int(row['row ID'])}"
@@ -110,7 +107,7 @@ def ex_spectra(file, start_txt, end_txt, skip_words=None):
 def mgf_process(mgf_file):
     '''
     Process MGF file to extract relevant information.
-    :param mgf_file:
+    :param mgf_file: '.mgf'
     :return: id<str> pepmass<str>, ms2<np array>
     '''
     id_txt = 'FEATURE_ID='
@@ -138,10 +135,16 @@ def mgf_process(mgf_file):
     return exp_info
 
 def spectra_process(qms1,qms2):
-        id='1'
-        pepmass= qms1
-        charge='1'
-
+    '''
+    Directly process input query MS1 and MS2 spectra
+    :param qms1: e.g. ''
+    :param qms2: e.g. '381.2958'
+    :return: e.g. '381.2284 1.0E2 381.2344 1.1E2 381.2822 1.1E2 381.2842 1.3E2 381.2862 5.2E2'
+    '''
+    id='1'
+    pepmass= qms1
+    charge='1'
+    try:
         spectra = []
         temp = []
         lines = qms2.strip().split('\n')
@@ -150,17 +153,24 @@ def spectra_process(qms1,qms2):
             temp.append([float(m_z), float(intensity)])
         temp = np.array(temp, dtype=np.float64)
         spectra.append(temp)
+    except:
+        spectra = []
+        temp = []
+        elements = qms2.split()
+        for i in range(0,len(elements),2):
+            temp.append([float(elements[i]),float(elements[i+1])])
+        temp = np.array(temp,dtype=np.float64)
+        spectra.append(temp)
 
-
-        exp_info = pd.DataFrame({
-            'id': id
-            , 'pepmass': pepmass
-            , 'charge': charge
-            , 'ms2': spectra
-        })
-        exp_info = exp_info[exp_info['ms2'].apply(len) > 1]  # delete empty list
-        exp_info = exp_info.reset_index(drop=True)
-        return exp_info
+    exp_info = pd.DataFrame({
+        'id': id
+        , 'pepmass': pepmass
+        , 'charge': charge
+        , 'ms2': spectra
+    })
+    exp_info = exp_info[exp_info['ms2'].apply(len) > 1]  # delete empty list
+    exp_info = exp_info.reset_index(drop=True)
+    return exp_info
 
 def get_mgf_info(mgf_info,mgf_id):
     '''
@@ -183,7 +193,7 @@ def get_mgf_info(mgf_info,mgf_id):
     else:
         raise ValueError(f"No data found for mgf_id: {mgf_id}")
 
-def get_gnps_info(gnps_info, gnps_id):
+def get_edb_info(gnps_info, gnps_id):
     '''
 
     :param isdb_info:

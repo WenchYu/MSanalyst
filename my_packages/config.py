@@ -1,3 +1,7 @@
+
+'''
+Parameters used in MSanalyst
+'''
 import argparse
 import ast
 
@@ -5,7 +9,7 @@ def arg_parse():
     parser = argparse.ArgumentParser(
         prog="MSanalyst",
         description="MSanalyst designed for molecular networking and annotation",
-        usage="python msanalyst.py main -q xxx_quant.csv -m xxx.mgf -o output_path"
+        usage="python main.py -q xxx_quant.csv -m xxx.mgf -o output_path"
     )
 
     '''In/output and database selecting'''
@@ -97,7 +101,6 @@ def arg_parse():
     parser.add_argument('-mn2', "--mn2_file", type=str, help="Molecular network file 2")
     parser.add_argument('-ml', "--merge_list", type=ast.literal_eval, help="absolute path of graphml files to merge")
     parser.add_argument('-cpu', "--cpus", type=int, help="The number of CPUs allowed to be used",default=32)
-
 
     return parser.parse_args()
 

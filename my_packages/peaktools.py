@@ -1,7 +1,3 @@
-# -*- coding: utf-8 -*-
-# @Time :2023/4/6 12:47
-# @Auther :
-# @Software : PyCharm
 '''
 
 '''
@@ -314,7 +310,6 @@ def _cosine_fast(
     )
 
 Match = namedtuple('Match', ['peak1', 'peak2', 'score'])
-#可以用属性来引用tuple的某个元素
 Peak = namedtuple('Peak',['mz','intensity'])
 Alignment = namedtuple('Alignment', ['peak1', 'peak2'])
 
@@ -353,8 +348,6 @@ def convert_to_peaks(peak_tuples):
     Using the splat we can handle both size 2 lists and tuples
     :param peak_tuples: size 2 [[mz,intensity],...] or [(mz,intensity),...]
     :return:[Peak(mz=x, intensity=y),...,]
-    * 解包tuple对象，表示作为一个一个位置参数传入到函数中
-    ** 解包dict对象，表示作为一个一个关键词参数传入到函数
     '''
 
     return [Peak(*p) for p in peak_tuples]

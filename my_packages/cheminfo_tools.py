@@ -1,37 +1,23 @@
-# -*- coding: utf-8 -*-
-# @Time :2022/11/29 15:38
-# @Auther :Yuwenchao
-# @Software : PyCharm
+
 '''
-用法：DataFrame.drop(labels=None,axis=0, index=None, columns=None, inplace=False)
-
-参数说明：
-labels 就是要删除的行列的名字，用列表给定
-axis 默认为0，指删除行，因此删除columns时要指定axis=1；
-index 直接指定要删除的行
-columns 直接指定要删除的列
-inplace=False，默认该删除操作不改变原数据，而是返回一个执行删除操作后的新dataframe；
-inplace=True，则会直接在原数据上进行删除操作，删除后无法返回。
-
-因此，删除行列有两种方式：
-1）labels=None,axis=0 的组合
-2）index或columns直接指定要删除的行或列
-
-处理coconut，smiles————> formula ————> exactmass ————> m_plus_h&m_plus_na
+Calculating MCS similarity
+Calculating theoretical mass of adducts
+    smiles -> formula -> exact mass of adducts
 '''
-import os
 import re
-import time
-import argparse
-
-import numpy as np
 import pandas as pd
-# import autode as ade
-
+import numpy as np
 from tqdm import trange
+from rdkit import Chem
 from rdkit.Chem import rdFMCS
+from rdkit.Chem import rdMolDescriptors
+
 
 def MCS(mol1, mol2):
+    '''
+    Calculating maximum common substructure (MCS) similarity
+    from [literature](https://www.nature.com/articles/s41467-022-30118-9)
+    '''
     mcs = rdFMCS.FindMCS([mol1, mol2]
                          , bondCompare=rdFMCS.BondCompare.CompareOrder
                          , atomCompare=rdFMCS.AtomCompare.CompareAny
@@ -40,22 +26,30 @@ def MCS(mol1, mol2):
                          , matchValences=False
                          , timeout=10
                          )
-
     mcs_num_bonds = mcs.numBonds
     mol1_num_bonds = mol1.GetNumBonds()
     mol2_num_bonds = mol2.GetNumBonds()
-
     similarity = mcs_num_bonds / ((mol1_num_bonds + mol2_num_bonds) - mcs_num_bonds)
     return similarity
+
+def Smile2Formula(smile):
+    '''
+    Converting smile to chemical formula
+    '''
+    mol = Chem.MolFromSmiles(smile)
+    if mol is None:
+        return "Invalid SMILES"
+    mol_with_h = Chem.AddHs(mol)
+    formula = rdMolDescriptors.CalcMolFormula(mol_with_h)
+    return formula
 
 class MyChemInfo():
     @staticmethod
     def AtomicWeight(element: str) -> float:
         """
-        根据元素名称返回其原子量，区分大小写的
-        # 该原子量数据从https://www2.chemistry.msu.edu/faculty/reusch/OrgPage/mass.htm 手册第95版提取
+        Monoisotopic mass of each element
         """
-        if len(element) > 2:  # 元素名称长度不应超过2个字符.
+        if len(element) > 2:
             return None
         return {
             "H": 1.007825,
@@ -142,7 +136,7 @@ class MyChemInfo():
             "Th": 232.0377,
             "Pa": 231.03588,
             "U": 238.02891,
-            "Tc": 0,  # 有些放射性元素的原子量没有提供，以0表示。
+            "Tc": 0,
             "Pm": 0,
             "Po": 0,
             "At": 0,
@@ -176,11 +170,10 @@ class MyChemInfo():
     @staticmethod
     def MolWt(formula: str) -> float:
         '''
-
-        :param formula: Molecular formular in str format
-        :return:
+        Calculating the exact mass from a chemical formula
+        :param formula: Chemical formular in str format
         '''
-        regStr = "([A-Z]{1}[a-z]{0,1})([0-9]{0,3})"  # 解析化学式的正则表达式
+        regStr = "([A-Z]{1}[a-z]{0,1})([0-9]{0,3})"
         MatchList = re.findall(regStr, formula)
         cntMatchList = len(MatchList)
         i = 0
@@ -189,7 +182,7 @@ class MyChemInfo():
             eleName = MatchList[i][0]
             eleCount = int(MatchList[i][1]) if len(MatchList[i][1]) > 0 else 1
             aw = MyChemInfo.AtomicWeight(eleName)
-            if (aw == 0):  # 防止错误表示不能及时识别出来。
+            if (aw == 0):
                 return 0
             mW += aw * eleCount
             i = i + 1
@@ -197,145 +190,31 @@ class MyChemInfo():
 
     @staticmethod
     def Adduct(adduct:str)-> float:
-        '''
-
-        :param adduct:
-        :return:
-        '''
-        regStr = "([A-Z]{1}[a-z]{0,1})([0-9]{0,3})"  # 解析化学式的正则表达式
+        regStr = "([A-Z]{1}[a-z]{0,1})([0-9]{0,3})"
         MatchList = re.findall(regStr, adduct)
         for i in range(len(MatchList)):
             if MatchList[i][0] != 'M':
                 return MyChemInfo.AtomicWeight(MatchList[i][0])
 
 if __name__ == '__main__':
-    t=time.time()
-    os.chdir('/Users/hehe/desktop/xxx/lxn')
-    parser = argparse.ArgumentParser(description='外部传参！')
-    parser.add_argument('-f', '--file', type=str, help='添加要处理文件')
-    args = parser.parse_args()
+    '''Loading dataset'''
+    MS1_library_file = '../msdb/isdbMS1.csv' # Example csv file, containing columns['smiles']
+    MS1_library_df = pd.read_csv(MS1_library_file,index_col=None)
 
-    file='compounds.csv'
-    df=pd.read_csv(file,index_col=None)
-    print(df.columns)
-
-    '''待计算'''
-    df['formula']=np.nan
-    df['exactmass']=np.nan
-
-    '''charge 1+'''
-    # df['m+h']=np.nan
-    # df['m+nh4'] = np.nan
-    # df['m+na']=np.nan
-    # df['m+k']=np.nan
-    # df['m+meoh+h']=np.nan
-    # df['m+acn+h'] = np.nan
-    # df['m+2na-h'] = np.nan
-    # df['m+acn+na'] = np.nan
-    # df['m+2k-h'] = np.nan
-    # df['m+dmso+h'] = np.nan
-    # df['m+2acn+h'] = np.nan
-    # df['2m+h'] = np.nan
-    # df['2m+nh4'] = np.nan
-    # df['2m+na'] = np.nan
-    # df['2m+k'] = np.nan
-    # df['2m+acn+h'] = np.nan
-    # df['2m+acn+na'] = np.nan
-
-    '''charge 2+'''
-    # df['m+2h'] = np.nan
-    # df['m+h+nh4'] = np.nan
-    # df['m+h+na'] = np.nan
-    # df['m+h+k'] = np.nan
-    # df['m+acn+2h'] = np.nan
-    # df['m+2na'] = np.nan
-    # df['m+2acn+2h'] = np.nan
-    # df['m+3acn+2h'] = np.nan
-    # df['2m+3h2o+2h'] = np.nan
-
-    '''charge 3+'''
-    # df['m+3h'] = np.nan
-    # df['m+2h+na'] = np.nan
-    # df['m+h+2na'] = np.nan
-    # df['m+3na'] = np.nan
-
-    '''charge - '''
-    # df['m-3h'] = np.nan
-    # df['m-2h'] = np.nan
-    # df['m-h'] = np.nan
-    # df['m+na-2h'] = np.nan
-    # df['m+cl'] = np.nan
-    # df['m+k-2h'] = np.nan
-    # df['m+fa-h'] = np.nan
-    # df['m-hac-h'] = np.nan
-    # df['m+br'] = np.nan
-    # df['m+tfa-h'] = np.nan
-    # df['2m-h'] = np.nan
-    # df['2m+fa-h'] = np.nan
-    # df['2m+hac-h'] = np.nan
-    # df['3m-h'] = np.nan
-
-    for i in trange(len(df.index)):
+    '''Calculating the theoretical values of all adducts'''
+    MS1_library_df['formula'] = np.nan
+    MS1_library_df['exactmass'] = np.nan
+    for i in trange(len(MS1_library_df.index)):
         try:
-            smile = df.smiles[i]
-            df.loc[i,'formula'] = ade.Molecule(smiles=smile).formula
-            df.loc[i,'exactmass'] = MyChemInfo.MolWt(df.formula[i])
-            df.loc[i,'m+h'] = df.loc[i,'exactmass'] + 1.007276
-        #     df.loc[i,'m+nh4'] = df.loc[i,'exactmass'] + 18.033823
-            df.loc[i,'m+na'] = df.loc[i,'exactmass'] + 22.989218
-            # df.loc[i, 'm-h2o+h'] = df.loc[i, 'exactmass'] + 1.007276 - 18.01056
-            # df.loc[i,'m+k'] = df.loc[i,'exactmass'] +
-            # df.loc[i,'m+meoh+h'] = df.loc[i,'exactmass'] +
-            # df.loc[i,'m+acn+h'] = df.loc[i,'exactmass'] +
-            # df.loc[i,'m+2na-h'] = df.loc[i,'exactmass'] +
-            # df.loc[i,'m+acn+na'] = df.loc[i,'exactmass'] +
-            # df.loc[i,'m+2k-h'] = df.loc[i,'exactmass'] +
-            # df.loc[i,'m+dmso+h'] = df.loc[i,'exactmass'] +
-            # df.loc[i,'m+2acn+h'] = df.loc[i,'exactmass'] +
-            # df.loc[i,'2m+h'] = df.loc[i,'exactmass'] +
-            # df.loc[i,'2m+nh4'] = df.loc[i,'exactmass'] +
-            # df.loc[i,'2m+na'] = df.loc[i,'exactmass'] +
-            # df.loc[i,'2m+k'] = df.loc[i,'exactmass'] +
-            # df.loc[i,'2m+acn+h'] = df.loc[i,'exactmass'] +
-            # df.loc[i,'2m+acn+na'] = df.loc[i,'exactmass'] +
-
-            # '''charge 2+'''
-            # df.loc[i,'m+2h'] = np.nan
-            # df.loc[i,'m+h+nh4'] = np.nan
-            # df.loc[i,'m+h+na'] = np.nan
-            # df.loc[i,'m+h+k'] = np.nan
-            # df.loc[i,'m+acn+2h'] = np.nan
-            # df.loc[i,'m+2na'] = np.nan
-            # df.loc[i,'m+2acn+2h'] = np.nan
-            # df.loc[i,'m+3acn+2h'] = np.nan
-            # df.loc[i,'2m+3h2o+2h'] = np.nan
-            #
-            # '''charge 3+'''
-            # df.loc[i,'m+3h'] = np.nan
-            # df.loc[i,'m+2h+na'] = np.nan
-            # df.loc[i,'m+h+2na'] = np.nan
-            # df.loc[i,'m+3na'] = np.nan
-            #
-            # '''charge - '''
-            # df.loc[i,'m-3h'] = np.nan
-            # df.loc[i,'m-2h'] = np.nan
-            # df.loc[i,'m-h'] = np.nan
-            # df.loc[i,'m+na-2h'] = np.nan
-            # df.loc[i,'m+cl'] = np.nan
-            # df.loc[i,'m+k-2h'] = np.nan
-            # df.loc[i,'m+fa-h'] = np.nan
-            # df.loc[i,'m-hac-h'] = np.nan
-            # df.loc[i,'m+br'] = np.nan
-            # df.loc[i,'m+tfa-h'] = np.nan
-            # df.loc[i,'2m-h'] = np.nan
-            # df.loc[i,'2m+fa-h'] = np.nan
-            # df.loc[i,'2m+hac-h'] = np.nan
-            # df.loc[i,'3m-h'] = np.nan
+            smile = MS1_library_df.smiles[i]
+            MS1_library_df.loc[i,'formula'] = Smile2Formula(smile)
+            MS1_library_df.loc[i,'exactmass'] = MyChemInfo.MolWt(MS1_library_df.formula[i])
+            MS1_library_df.loc[i,'m+h'] = MS1_library_df.loc[i,'exactmass'] + 1.007276
+            MS1_library_df.loc[i,'m+nh4'] = MS1_library_df.loc[i,'exactmass'] + 18.033823
+            MS1_library_df.loc[i,'m+na'] = MS1_library_df.loc[i,'exactmass'] + 22.989218
         except:
             pass
 
-
-    df.to_csv(file,index=None)
 
 
 
