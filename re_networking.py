@@ -1,12 +1,9 @@
-# -*- coding: utf-8 -*-
-# @Time : 2025/2/7 14:27
-# @Auther : Yuwenchao
-# @Software : PyCharm
+
 '''
 Re clustering the generated network
 '''
-import time
-import argparse
+import sys
+sys.path.append('./')
 from my_packages import ms2tools, config
 
 def re_networking(args):

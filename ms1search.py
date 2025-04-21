@@ -2,6 +2,8 @@
 '''
 MS1 search against entire MSanalyst MS1 library
 '''
+import sys
+sys.path.append('./')
 import pandas as pd
 from my_packages import ms2tools,config
 

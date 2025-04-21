@@ -8,15 +8,11 @@ MSanalyst annotating non-targeted metabolomics data includes the following steps
 '''
 
 import os
-import time
-import json
-import ast
-import heapq
+import ast,time,json,heapq,spectral_entropy
 import pandas as pd
 import numpy as np
 import networkx as nx
 import spectrum_utils.spectrum as sus
-import spectral_entropy
 from tqdm import tqdm, trange
 from joblib import Parallel, delayed
 from spectral_entropy import similarity
@@ -410,59 +406,49 @@ def mn_curating(G, topk):
     return G
 
 def self_clustering(args):
-    '''Clustering the metabolomic features'''
-    # Loading query '.mgf' file
-    parent_folder = f'{args.output}/{os.path.splitext(os.path.basename(args.quant_file))[0]}_result'
-    exp_info = functions.mgf_process(args.mgf_file)
+    '''
 
-    G = nx.Graph()
+    :param args: args.output, args.quant_file, args.mgf_file, args.self_clustering_similarity
+    :return:
+    '''
+    parent_folder = f'{args.output}/{os.path.splitext(os.path.basename(args.quant_file))[0]}_result/merge/'
+    if not os.path.exists(parent_folder): # Make sure the parent folder exist
+        os.makedirs(parent_folder)
+    exp_info = functions.mgf_process(args.mgf_file) # Loading query '.mgf' file
+
+    G = nx.MultiGraph()  # Creating undirected graph
     for i, (id1, pm1, charge1, spec1) in exp_info.iterrows():
         pm1 = float(pm1)
         node_attr = {'pepmass': pm1}
-        G.add_node(id1, **node_attr)  # add nodes and node attributes
+        G.add_node(id1, **node_attr)  # add nodes and attributes
 
-     # Parsing query MS2 spectra
-    for i, (id1, pm1, charge1, spec1) in tqdm(exp_info.iterrows(), total = len(exp_info)):
-        pm1 = float(pm1) # pepmass of query feature
-        charge1= int(charge1) # charge of query feature
-        mz1 = np.array(spec1[:, 0], dtype=np.float64) #
-        spectrum1 = sus.MsmsSpectrum(identifier=id1, precursor_mz=pm1, precursor_charge=charge1, mz=mz1,
-                                     intensity=spec1[:, 1]) # Spectrum for MS2 comparison using modified_cosine and neutral_loss
-        peaks1 = len(spec1) # number of fragments in the MS2 spectrum
-        if args.spectrum_clean: # Spectrum clean by normalization and noise removing
-            spec1 = spectral_entropy.clean_spectrum(spec1
-                                                    , max_mz = pm1 - 0.01
-                                                    , noise_removal = 0.01
-                                                    , ms2_ppm = 5
-                                                    , ms2_da = 0.02
-                                                    )
-            spectrum1 = spectrum1.filter_intensity(min_intensity=0.01) \
-                .set_mz_range(0, spectrum1.precursor_mz).remove_precursor_peak(0.1, "Da")
-            peaks1 = len(spec1)
-
+    # Self clustering
+    for i, (id1, pm1, charge1, spec1) in tqdm(exp_info.iterrows(), total=len(exp_info)):
+        pm1 = float(pm1)
+        charge1 = int(charge1)
+        spec1 = spectral_entropy.clean_spectrum(spec1, max_mz=pm1 - 0.01, noise_removal=0.01)
+        mz1 = np.array(spec1[:, 0], dtype=np.float64)
+        intensity1 = np.array(spec1[:, 1], dtype=np.float64)
+        spectrum1 = sus.MsmsSpectrum(identifier=id1, precursor_mz=pm1, precursor_charge=charge1
+                                     , mz=mz1, intensity=intensity1).remove_precursor_peak(0.01, "Da")
+        peaks1 = len(spec1)
+        G.add_node(id1, **{'num_fragments': peaks1})
         for j, (id2, pm2, charge2, spec2) in exp_info.iloc[:i, ].iterrows():
             pm2 = float(pm2)
             charge2 = int(charge2)
+            spec2 = spectral_entropy.clean_spectrum(spec2, max_mz=pm2 - 0.01, noise_removal=0.01)
             mz2 = np.array(spec2[:, 0], dtype=np.float64)
-            spectrum2 = sus.MsmsSpectrum(identifier=id2, precursor_mz=pm2, precursor_charge=charge2, mz=mz2
-                                         , intensity=spec2[:, 1])
-            if args.spectrum_clean:
-                spec2 = spectral_entropy.clean_spectrum(spec2
-                                                        , max_mz = pm2 - 0.01
-                                                        , noise_removal = 0.01
-                                                        , ms2_ppm = 5
-                                                        , ms2_da = 0.02)
-                spectrum2 = spectrum2.filter_intensity(min_intensity=0.01) \
-                                        .set_mz_range(0, spectrum2.precursor_mz).remove_precursor_peak(0.1, "Da")
+            intensity2 = np.array(spec2[:, 1], dtype=np.float64)
+            spectrum2 = sus.MsmsSpectrum(identifier=id2, precursor_mz=pm2, precursor_charge=charge2, mz=mz2,
+                                         intensity=intensity2).remove_precursor_peak(0.01, "Da")
 
-            shift = abs(pm1 - pm2) # Allowed mass shift for MS2 comparison
-            sim, mps, pp= 0.0, 0, 0.0
+            sim, mps, pp = 0.0, 0, 0.0
             if args.self_clustering_method == 'modified_cosine':
                 try:
-                    result = modified_cosine(spectrum1,spectrum2,fragment_mz_tolerance=0.02)
+                    result = modified_cosine(spectrum1, spectrum2, fragment_mz_tolerance=0.02)
                     sim = result.score
                     mps = result.matches
-                    pp = mps/peaks1
+                    pp = mps / peaks1
                 except:
                     pass
             elif args.self_clustering_method == 'neutral_loss':
@@ -470,28 +456,22 @@ def self_clustering(args):
                     result = neutral_loss(spectrum1, spectrum2, fragment_mz_tolerance=0.02)
                     sim = result.score
                     mps = result.matches
-                    pp = mps/peaks1
+                    pp = mps / peaks1
                 except:
                     pass
-
             else:
                 try:
-                    sim = similarity(spec1, spec2, method=args.self_clustering_method, ms2_ppm=10 ,ms2_da = 0.05)
-                    mps = len(
-                        find_match_peaks_efficient(
-                            convert_to_peaks(spec1)
-                            , convert_to_peaks(spec2)
-                            , shift = shift
-                            , tolerance=0.02)
-                            )
-                    pp = mps/peaks1
+                    sim = similarity(spec1, spec2, method=args.self_clustering_method, ms2_da=0.02)
+                    result = modified_cosine(spectrum1, spectrum2, fragment_mz_tolerance=0.02)
+                    mps = result.matches
+                    pp = mps / peaks1
                 except:
                     pass
             if sim >= args.self_clustering_similarity \
-                    and mps >= args.self_clustering_peaks: # Clustering according to the spectral similarity and matched peaks
-                    edge_attr = {'pair_similarity': sim, 'matched_peaks': mps,'peak_percentage':pp}
-                    G.add_edge(id1, id2, **edge_attr)
-
+                    and mps >= args.self_clustering_peaks:
+                edge_attr = {'pair_similarity': sim, 'matched_peaks': mps, 'peak_percentage': pp,
+                             'edge_type': args.self_clustering_method}
+                G.add_edge(id1, id2, **edge_attr)
     # Output
     G = mn_curating(G,args.top_k)
     print('Self clustering finished!')
@@ -513,6 +493,7 @@ def molecular_generation(args):
     quant_df = functions.df_preprocess(args.quant_file)
     exp_info = functions.mgf_process(args.mgf_file)
     row_ids = [int(x) for x in exp_info['id'].values.tolist()]
+
     G = nx.MultiGraph()  # Creating undirected graph
     for i, (id1, pm1, charge1, spec1) in exp_info.iterrows():
         pm1 = float(pm1)
@@ -557,7 +538,7 @@ def molecular_generation(args):
                     pass
             else:
                 try:
-                    sim = similarity(spec1, spec2, method=args.self_clustering_method,ms2_da=0.02)
+                    sim = similarity(spec1, spec2, method=args.self_clustering_method, ms2_da=0.02)
                     result = modified_cosine(spectrum1, spectrum2, fragment_mz_tolerance=0.02)
                     mps = result.matches
                     pp = mps / peaks1

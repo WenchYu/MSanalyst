@@ -2,8 +2,9 @@
 '''
 
 '''
-
-from my_packages import functions,ms2tools,config
+import sys
+sys.path.append('./')
+from my_packages import functions,ms2tools,config,topology
 
 def main(args):
     '''Main workflow of MSanalyst'''
@@ -13,7 +14,7 @@ def main(args):
     ms2tools.EDB_MS2_match(args)
     functions.create_subresults(args)
     ms2tools.molecular_generation(args)
-
+    topology.connectivity_screening(args)
 
 if __name__ == '__main__':
     args = config.args

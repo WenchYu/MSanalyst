@@ -2,6 +2,8 @@
 '''
 
 '''
+import sys
+sys.path.append('./')
 import os
 import networkx as nx
 from my_packages import config
