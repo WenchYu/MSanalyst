@@ -1,7 +1,15 @@
 
 '''
 Figure 2A. Accumulation curve of GNPS and MSanalyst results
-Visualizing in prism
+
+input:
+LibSearch_top100_0.1.csv (GNPS library searching results)
+
+E_MS1match_std_quant.csv (Experimental library searching results)
+IS_MS1match_std_quant.csv (In-silico library searching results)
+
+output:
+    Data for visualizing in prism
 '''
 import os
 import time
@@ -20,7 +28,7 @@ if __name__ == '__main__':
     t = time.time()
     # Loading GNPS library searching result
     file = './data/LibSearch_top100_0.1.csv'
-    df = pd.read_csv(file, encoding='gbk')
+    df = pd.read_csv(file)
 
     # Loading MSanalyst library searching result
     edb_file = './data/E_MS1match_std_quant.csv'

@@ -1,7 +1,14 @@
 
 '''
-Calculate the MCS similarity between the query feature and the reference match in advance
-(using MCS() in '../my_packages/cheminfo_tools.py')
+Fig 2B GNPS TopK annotations
+input:
+LibSearch_top100_0.1.csv (GNPS library searching results)
+
+output:
+    Data for visualizing in prism
+
+
+
 '''
 import os
 import time
@@ -16,7 +23,7 @@ if __name__ == '__main__':
 
     # Loading GNPS library searching result
     file = './data/LibSearch_top100_0.1.csv'
-    df = pd.read_csv(file,encoding='gbk')
+    df = pd.read_csv(file)
 
     # Counting the number of high similar pairs under topk (MCS≥0.7)
     ids = list(Counter(df['#Scan#']))  # Get a list of all features (45)

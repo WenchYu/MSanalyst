@@ -481,7 +481,7 @@ def self_clustering(args):
 
 def molecular_generation(args):
     '''
-    Generating the final molecular network
+    Categorizing the features and generating the final molecular network
     A : features without any MS1 match
     B1 : features have MS1 matches in edb or isdb but MS2 match unwell
     B2 : features have MS1 matches in edb or isdb and MS2 match well

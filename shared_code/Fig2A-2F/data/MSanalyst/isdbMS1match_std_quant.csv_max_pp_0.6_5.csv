@@ -1,2 +1,0 @@
-Unnamed: 0,row ID,smiles,row m/z,match_id,match_smiles,mps0,pp0,pair_similarity0,mps1,pp1,pair_similarity1,mps2,pp2,pair_similarity2,max_pp,max_mps,mcs
-4841,37,O=C(CO)C1=CNC2=CC=CC=C21,176.0708618,CNP0254547,O=CC1=CN(OC)C=2C=CC=CC12,1.0,0.090909091,0.039900184,1.0,0.090909091,0.0325903,9.0,0.818181818,0.387456259,0.818181818,9.0,0.75

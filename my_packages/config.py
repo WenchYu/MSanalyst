@@ -9,7 +9,7 @@ def arg_parse():
     parser = argparse.ArgumentParser(
         prog="MSanalyst",
         description="MSanalyst designed for molecular networking and annotation",
-        usage="python main.py -q xxx_quant.csv -m xxx.mgf -o output_path"
+        usage="python mn.py -q xxx_quant.csv -m xxx.mgf -o output_path"
     )
 
     '''In/output and database selecting'''

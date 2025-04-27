@@ -3,9 +3,7 @@
 Basic Functions for MSanalyst
 '''
 
-import os
-import ast
-import json
+import os,re,ast,json
 import pandas as pd
 import numpy as np
 import spectrum_utils.spectrum as sus
@@ -72,7 +70,7 @@ def create_subresults(args):
         with open(edbcsv_file, 'a', newline='') as f2:
             selected_rows.to_csv(f2, index=False, header=False)
 
-def ex_spectra(file, start_txt, end_txt, skip_words=None):
+def ex_spectra(file, start_txt, end_txt, skip_words='MERGED'):
     '''
     Horizontal and vertical coordinates of tandem mass
     :param file:
@@ -296,6 +294,30 @@ def db_parsing():
         gnps_info = json.load(f1)
     return isdb_info, gnps_info
 
+def list_files(directory,keyword):
+    '''
+    list files with keyword
+    :param directory: dirt
+    :return: A list containing all .graphml file paths
+    '''
+    graphml_files = []
+    for root, dirs, files in os.walk(directory):
+        for file in files:
+            if file.endswith(keyword):
+                graphml_files.append(os.path.join(root, file))
+    return graphml_files
+
+def ex_algorithm_name(file,prefix):
+    '''
+    extract algorithm name from '.graphml' files
+    e.g. dot_product from KutzOsmac_dot_product_0.7_3.graphml
+    :return:
+    '''
+    match = re.search(r'^(\w+)_|(\w+)_\d+\.\d+', file)
+    if match:
+        pattern = match.group(1) if match.group(1) else match.group(2)
+        pattern = pattern.replace(f'{prefix}_', '')
+        return pattern
 
 
 if __name__ == '__main__':

@@ -18,18 +18,21 @@ def MCS(mol1, mol2):
     Calculating maximum common substructure (MCS) similarity
     from [literature](https://www.nature.com/articles/s41467-022-30118-9)
     '''
-    mcs = rdFMCS.FindMCS([mol1, mol2]
-                         , bondCompare=rdFMCS.BondCompare.CompareOrder
-                         , atomCompare=rdFMCS.AtomCompare.CompareAny
-                         , maximizeBonds = False
-                         , ringMatchesRingOnly=False
-                         , matchValences=False
-                         , timeout=10
-                         )
-    mcs_num_bonds = mcs.numBonds
-    mol1_num_bonds = mol1.GetNumBonds()
-    mol2_num_bonds = mol2.GetNumBonds()
-    similarity = mcs_num_bonds / ((mol1_num_bonds + mol2_num_bonds) - mcs_num_bonds)
+    try:
+        mcs = rdFMCS.FindMCS([mol1, mol2]
+                             , bondCompare=rdFMCS.BondCompare.CompareOrder
+                             , atomCompare=rdFMCS.AtomCompare.CompareAny
+                             , maximizeBonds = False
+                             , ringMatchesRingOnly=False
+                             , matchValences=False
+                             , timeout=10
+                             )
+        mcs_num_bonds = mcs.numBonds
+        mol1_num_bonds = mol1.GetNumBonds()
+        mol2_num_bonds = mol2.GetNumBonds()
+        similarity = mcs_num_bonds / ((mol1_num_bonds + mol2_num_bonds) - mcs_num_bonds)
+    except: similarity = 0
+
     return similarity
 
 def Smile2Formula(smile):

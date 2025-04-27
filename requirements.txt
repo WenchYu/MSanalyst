@@ -10,7 +10,8 @@ SpectralEntropy
 scipy
 scikit-learn
 seaborn
-
+openpyxl
+rdkit
 
 
 

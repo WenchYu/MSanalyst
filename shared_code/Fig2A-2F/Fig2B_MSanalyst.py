@@ -1,6 +1,11 @@
 
 '''
+Fig 2B FBMN TopK annotations
+input:
+E_IS_merge.csv (Merged by IS_MS1match_std_quant.csv and E_MS1match_std_quant.csv)
 
+output:
+    Data for visualizing in prism
 '''
 import os
 import time
@@ -10,6 +15,7 @@ from collections import Counter
 
 if __name__ == '__main__':
     t = time.time()
+
     # Combining the 'E_MS1match_std_quant.csv' and 'IS_MS1match_std_quant.csv' and loading
     merge_file = './data/E_IS_merge.csv'
     merge_df = pd.read_csv(merge_file)
