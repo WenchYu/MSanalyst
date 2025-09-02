@@ -6,7 +6,7 @@ This repository contains the original source code of MSanalyst.
 You can use the [online version](https://msanalyst.net/) or installing the stand-alone version from this repository
 ```bash
 # Downloading msanalyst library using command or manually
-wget --no-check-certificate 'https://drive.google.com/file/d/1w6HF3w1KIJlTz_QaVqqtN1BzkGDhDgzw/view?usp=sharing'
+gdown --id 1w6HF3w1KIJlTz_QaVqqtN1BzkGDhDgzw
 
 # Cloning MSanalyst repository
 git clone git@github.com:WenchYu/MSanalyst.git && cd MSanalyst
@@ -42,13 +42,6 @@ python mn.py  -q ./example/example_quant.csv -m ./example/example.mgf -o ./examp
 python reanalysing.py -m ./example/example.mgf -q ./example/example_quant.csv -scm neutral_loss -scs 0.5 -scp 4
 ```
 
-- `ms1search.py`
-for single quick ms<sup>1</sup> searching
-
-```bash
-python ms1search.py -qms1 227.234
-```
-
 - `ms2search.py` 
 for single ms<sup>2</sup> searching
 
@@ -70,7 +63,8 @@ for merging different molecular networks
 ```bash
 python mn.py  -q ./example/example_quant.csv -m ./example/example.mgf -o ./example/
 python reanalysing.py -m ./example/example.mgf -q ./example/example_quant.csv -scm neutral_loss -scs 0.5 -scp 4
-python merging.py -mn1 ./example/example_quant_result/example_modified_cosine_0.7_5.graphml -mn2 ./example/example_quant_result/example_neutral_loss_0.5_4.graphml -o ./example/
+python multimerging.py -mn1 ./example/example_quant_result/example_modified_cosine_0.7_5.graphml -mn2 ./example/example_quant_result/example_neutral_loss_0.5_4.graphml
+# Output will be generated in the mn1 folder by default
 ```
 
 ## Documentation

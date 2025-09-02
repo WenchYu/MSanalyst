@@ -91,10 +91,4 @@ if __name__ == '__main__':
     topology.NetworkEvaluation(merged_graphmls) # graphmls
 
 
-
-
-
-
-
-
     print(f'Finished in {(time.time() - t) / 60:.2f} min')

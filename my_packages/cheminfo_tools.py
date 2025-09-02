@@ -4,36 +4,107 @@ Calculating MCS similarity
 Calculating theoretical mass of adducts
     smiles -> formula -> exact mass of adducts
 '''
-import re
+import re, requests
 import pandas as pd
 import numpy as np
-from tqdm import trange
+from tqdm import trange, tqdm
 from rdkit import Chem
-from rdkit.Chem import rdFMCS
-from rdkit.Chem import rdMolDescriptors
+from rdkit.Chem import rdFMCS,rdMolDescriptors,AllChem,rdFingerprintGenerator
+from rdkit.DataStructs import TanimotoSimilarity,DiceSimilarity
 
 
-def MCS(mol1, mol2):
+
+
+
+def mcs(SMILE1, SMILE2):
     '''
     Calculating maximum common substructure (MCS) similarity
     from [literature](https://www.nature.com/articles/s41467-022-30118-9)
     '''
-    try:
-        mcs = rdFMCS.FindMCS([mol1, mol2]
-                             , bondCompare=rdFMCS.BondCompare.CompareOrder
-                             , atomCompare=rdFMCS.AtomCompare.CompareAny
-                             , maximizeBonds = False
-                             , ringMatchesRingOnly=False
-                             , matchValences=False
-                             , timeout=10
-                             )
-        mcs_num_bonds = mcs.numBonds
-        mol1_num_bonds = mol1.GetNumBonds()
-        mol2_num_bonds = mol2.GetNumBonds()
-        similarity = mcs_num_bonds / ((mol1_num_bonds + mol2_num_bonds) - mcs_num_bonds)
-    except: similarity = 0
+    MOL1 = Chem.MolFromSmiles(SMILE1)
+    MOL2 = Chem.MolFromSmiles(SMILE2)
 
-    return similarity
+    mcs = rdFMCS.FindMCS([MOL1, MOL2]
+                         , bondCompare=rdFMCS.BondCompare.CompareOrder
+                         , atomCompare=rdFMCS.AtomCompare.CompareAny
+                         , maximizeBonds = False
+                         , ringMatchesRingOnly=False
+                         , matchValences=False
+                         , timeout=10
+                         )
+    mcs_num_bonds = mcs.numBonds
+    mol1_num_bonds = MOL1.GetNumBonds()
+    mol2_num_bonds = MOL2.GetNumBonds()
+    return mcs_num_bonds / ((mol1_num_bonds + mol2_num_bonds) - mcs_num_bonds)
+
+def tanimoto(SMILE1,SMILE2):
+        '''
+
+        :param SMILE1:
+        :param SMILE2:
+        :return:
+        '''
+        try:
+            MOL1 = Chem.MolFromSmiles(SMILE1)
+            FP1 = AllChem.GetMorganFingerprintAsBitVect(MOL1, 2, nBits=1024)
+            MOL2 = Chem.MolFromSmiles(SMILE2)
+            FP2 = AllChem.GetMorganFingerprintAsBitVect(MOL2, 2, nBits=1024)
+            return TanimotoSimilarity(FP1,FP2)
+        except Exception:
+            return 0
+
+def dice(SMILE1,SMILE2):
+    '''
+
+    :param SMILE1:
+    :param SMILE2:
+    :return:
+    '''
+    MOL1 = Chem.MolFromSmiles(SMILE1)
+    FP1 = AllChem.GetMorganFingerprintAsBitVect(MOL1, 2, nBits=1024)
+    MOL2 = Chem.MolFromSmiles(SMILE2)
+    FP2 = AllChem.GetMorganFingerprintAsBitVect(MOL2, 2, nBits=1024)
+    return DiceSimilarity(FP1, FP2)
+
+def dice_pair(SMILE_LIST):
+    '''
+    If several IS hits found in one cluster, the purity of similar
+    :param SMILE_LIST:
+    :return:
+    '''
+    SIM_MATRIX = np.full((len(SMILE_LIST),len(SMILE_LIST)),0.0,dtype=float)
+    for idx1 in range(len(SMILE_LIST)):
+        SMILE1 = SMILE_LIST[idx1]
+        for idx2 in range(idx1):
+            SMILE2 = SMILE_LIST[idx2]
+            SMI = dice(SMILE1,SMILE2)
+            SIM_MATRIX[idx1,idx2] = SMI
+            SIM_MATRIX[idx2, idx1] = SMI
+    IDXs = []
+    for idx in range(len(SMILE_LIST)):
+        row = SIM_MATRIX[idx]
+        others = np.delete(row, idx)
+        ratio = np.sum(others >= 0.7) / len(others) if len(others) > 0 else 0
+        if ratio < 0.5:
+            IDXs.append(idx)
+
+    return IDXs
+
+
+
+
+
+
+    return ratio
+
+
+
+def get_morgan_generator():
+    return rdFingerprintGenerator.GetMorganGenerator(
+        includeChirality=False,
+        radius=2,
+        fpSize=1024
+    )
 
 def Smile2Formula(smile):
     '''
@@ -45,6 +116,21 @@ def Smile2Formula(smile):
     mol_with_h = Chem.AddHs(mol)
     formula = rdMolDescriptors.CalcMolFormula(mol_with_h)
     return formula
+
+def NPclass_request(SMILE):
+    '''
+    Use gnps2 API by SMILE/isocratic smile/canonical SMILE
+    :param SMILE:
+    :return:
+    '''
+    url = f"https://npclassifier.gnps2.org/classify?smiles={SMILE}"
+
+    response = requests.get(url)
+    if response.status_code == 200:
+        # 打印返回的 JSON 数据
+        return response.json()
+    else:
+        print(f"failed request:{response.status_code}")
 
 class MyChemInfo():
     @staticmethod

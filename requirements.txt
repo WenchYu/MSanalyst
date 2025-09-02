@@ -10,10 +10,8 @@ SpectralEntropy
 scipy
 scikit-learn
 seaborn
-openpyxl
-rdkit
-
-
+FPsim2
+ms_entropy
 
 
 
