@@ -12,6 +12,8 @@ scikit-learn
 seaborn
 FPsim2
 ms_entropy
+pyopenms
+matchms
 
 
 

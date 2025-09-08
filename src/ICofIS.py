@@ -98,7 +98,7 @@ if __name__ == '__main__':
         SIM_ARRAY1 = np.round(SIM_ARRAY1.astype(float), decimals=2)
         SPEC_IS0_SIM_MATRIC1.append(SIM_ARRAY1)
 
-    # 保存每部分
+    # Save
     np.save(f'../msdb/lib_matrix/entropy_{args.istype}_sim_icofis.npy', SPEC_IS0_SIM_MATRIC)
     np.save(f'../msdb/lib_matrix/entropy_{args.istype}_peak_icofis.npy', SPEC_IS0_NPEAK_MATRIC)
     np.save(f'../msdb/lib_matrix/modified_cosine_{args.istype}_sim1_icofis.npy', SPEC_IS0_SIM_MATRIC1)

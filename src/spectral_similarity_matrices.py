@@ -72,7 +72,7 @@ def spectral_sim_calc(gnps_info, CCMSIDs, ALGORITHM, args):
 
 def main():
     # Loading processed json file
-    GNPS_JSON = '../msdb/GNPSLIBRARY_250514/GNPS-LIBRARY-INFO.json'
+    GNPS_JSON = '../msdb/GNPSLIBRARY/GNPS-LIBRARY-INFO.json'
     with open(GNPS_JSON, 'r') as f:
         gnps_info = json.load(f)
 
@@ -128,7 +128,7 @@ if __name__ == '__main__':
     args = parse_args()
 
     # Load processed json file
-    GNPS_JSON = '../msdb/GNPSLIBRARY_250514/GNPS-LIBRARY-INFO.json'
+    GNPS_JSON = '../msdb/GNPSLIBRARY/GNPS-LIBRARY-INFO.json'
     with open(GNPS_JSON, 'r') as f:
         gnps_info = json.load(f)
 

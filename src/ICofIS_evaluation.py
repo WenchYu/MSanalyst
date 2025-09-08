@@ -6,14 +6,13 @@
 Evaluation the in-silico database
 1. confusion SpecSimMatrix of spectral pairs
 2. network evaluation
+usage: python ICofIS_evaluation.py -i is0 # or is1 or is2
 '''
-import os,time,argparse,sys,random,ujson
+import os,time,argparse,sys,ujson
 sys.path.append('../')
 import numpy as np
-import pandas as pd
 import networkx as nx
 from tqdm import trange,tqdm
-from sklearn.metrics import roc_curve,auc,confusion_matrix
 from my_packages import functions_new,evaluation
 from collections import Counter
 
@@ -26,7 +25,6 @@ def parse_args():
                        , default='is0')  # add parameter to object
     args = parse.parse_args() # parse parameter object to get parse object
     return args
-
 
 def rccc(GRAPHML_FILE, IDXtoFID_FILE, FS_SPECTRA):
     '''
@@ -63,7 +61,6 @@ def rccc(GRAPHML_FILE, IDXtoFID_FILE, FS_SPECTRA):
     except:
         RATION_CORRECTLY_CLASSIFIED_COMPONENT = 0
     return RATION_CORRECTLY_CLASSIFIED_COMPONENT
-
 
 def network_accuracy(GRAPHML_FILE, MATRIX_FILE, IDXtoID_FILE):
     '''
@@ -141,7 +138,7 @@ if __name__ == '__main__':
     for MN_F in MN_FILES:
         # try:
         mn = os.path.basename(MN_F).replace('.graphml', '')
-        N20 = topology.n20(MN_F)
+        N20 = evaluation.n20(MN_F)
         NACC, cacc, nc, ncn = network_accuracy(MN_F, CHEM_MATRIX_FILE,IDXtoID_FILE)
         # NETWORK_ACC, cluster_ave_acc, N_CLUSTERs, N_CLUSTER_NODEs
         # print(mn,nc,ncn,NACC)
@@ -156,42 +153,40 @@ if __name__ == '__main__':
     # EMP_MATRIX = np.load(f'../msdb/data/ICofIS/entropy_is{EL}_peak_icofis.npy')
     ECHEM_MATRIX = np.load(f'../msdb/data/ICofIS/chem/is{EL}_ICofIS.npy')
 
-    TNs, FPs, FNs, TPs = 0,0,0,0
+    OT = 0.54  # Optimal threshold
+
+    # Initialize cumulative counts
+    TNs, FPs, FNs, TPs = 0, 0, 0, 0
     non_zero_pairs = 0
-    for idx in trange(len(ESPEC_MATRIX)): #
-        ELables = [1 if x >= 0.75 else 0 for x in ECHEM_MATRIX[idx]]
 
-        # ROC_AUC   curve
-        # FPRs, TPRs, THRESHOLDs = roc_curve(ELables, EMaxSpecSim)
-        # AUC = auc(FPRs, TPRs)
-        #
-        # J = TPRs - FPRs  # # Youden's J to find the optimal threshold
-        # optimal_idx = np.argmax(J)
-        # OT = THRESHOLDs[optimal_idx]  # optimal spectral similarity threshold
-        OT = 0.54
-        Y_PREDCTIONs = [1 if x >= OT else 0 for x in ESPEC_MATRIX[idx]]  # Spectral sim ≥ threholds is considered as 1
-        non_zero_pair = len(np.where(ESPEC_MATRIX[idx] > 0 )[0])
-        TN, FP, FN, TP = confusion_matrix(ELables, Y_PREDCTIONs).ravel()
-        TNs += TN
-        FPs += FP
-        FNs += FN
-        TPs += TP
-        non_zero_pairs += non_zero_pair
+    # Get the indices of the upper triangle (excluding the diagonal)
+    triu_indices = np.triu_indices(ESPEC_MATRIX.shape[0], k=1)
+
+    # Iterate through the unique pairs
+    for i, j in trange(len(triu_indices[0])):
+        row_idx = triu_indices[0][i]
+        col_idx = triu_indices[1][j]
+
+        # Get the single label and prediction for this pair
+        e_label = 1 if ECHEM_MATRIX[row_idx, col_idx] >= 0.75 else 0
+        y_prediction = 1 if ESPEC_MATRIX[row_idx, col_idx] >= OT else 0
+
+        # Manually update confusion matrix counts
+        if e_label == 0 and y_prediction == 0:
+            TNs += 1
+        elif e_label == 0 and y_prediction == 1:
+            FPs += 1
+        elif e_label == 1 and y_prediction == 0:
+            FNs += 1
+        elif e_label == 1 and y_prediction == 1:
+            TPs += 1
+
+        # Count non-zero pairs
+        if ESPEC_MATRIX[row_idx, col_idx] > 0:
+            non_zero_pairs += 1
+
     print(f'The shape of spectral SpecSimMatrix is {ESPEC_MATRIX.shape}.')
-    print(f'The number of non-zero spectral pairs is {non_zero_pairs}.')
-    print(f'In the spectral pairs,TN = {TNs}, FP = {FPs}, FN = {FNs}, TP = {TPs}.')
-
-        # FDR = FP / (FP + TP)
-        # ISM_RES.append({'library': 'in-silico',
-        #                 'spectral_algorithm': ALGO,
-        #                 'optimal_threshold': OT,
-        #                 'TN': TN, 'FP': FP, 'FN': FN, 'TP': TP,
-        #                 'FDR': FDR
-        #                 # 'TPR': TPRs[optimal_idx], 'FPR': FPRs[optimal_idx],
-        #                 # 'AUC': AUC
-        #                 })
-
-    # ISM_DF = pd.DataFrame(ISM_RES).sort_values(by='TP', ascending=False)
-    # ISM_DF.to_csv(f'../msdb/data/ICofIS/is{EL}_ICofIS.csv')
+    print(f'The number of unique non-zero spectral pairs is {non_zero_pairs}.')
+    print(f'In the unique spectral pairs, TN = {TNs}, FP = {FPs}, FN = {FNs}, TP = {TPs}.')
 
     print(f'Finished in {(time.time() - t) / 60:.2f} min')

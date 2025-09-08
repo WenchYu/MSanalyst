@@ -121,7 +121,7 @@ def mn_merge(args):
     # Locate extra db node
     EM1 = {n for n, d in mn1_G.nodes(data=True) if d.get('level') == 'Ematch'}
     EM2 = {n for n, d in mn2_G.nodes(data=True) if d.get('level') == 'Ematch'}
-    extra_EM = EM2 - EM1  # 只在 mn2 里出现的 E match
+    extra_EM = EM2 - EM1  # E match that only appears in mn2
     print(extra_EM)
     # Preprocess extra db node
     for em in extra_EM:
@@ -130,12 +130,12 @@ def mn_merge(args):
                 continue
 
             if db not in mn1_G:
-                mn1_G.add_node(db, **mn2_G.nodes[db]) # 3-a 如果 mn1 中没有这个 DB 节点，先复制过去
+                mn1_G.add_node(db, **mn2_G.nodes[db]) # If the DB node does not exist in mn1, copy it first
 
                 mn1_G.nodes[em].update(mn2_G.nodes[em])
-                mn1_G.nodes[db].update(mn2_G.nodes[db]) # 3-b 把 DB 节点的属性更新成 mn2_G 里的最新值
+                mn1_G.nodes[db].update(mn2_G.nodes[db]) # Update the attributes of the DB node to the latest values in mn2_G
 
-                mn1_G.add_edge(db, em, **mn2_G[db][em]) # 3-c 把 mn2_G 里 (DB, Ematch) 这条边也搬到 mn1_G （若已存在则覆盖属性）
+                mn1_G.add_edge(db, em, **mn2_G[db][em]) # 3-c Move the edge (DB, Ematch) in mn2_G to mn1_G (overwrite the attribute if it already exists)
 
 
     ISM1 = {n for n, d in mn1_G.nodes(data=True) if d.get('level') == 'ISmatch'}
@@ -147,24 +147,19 @@ def mn_merge(args):
                 continue
 
             if db not in mn1_G:
-                mn1_G.add_node(db, **mn2_G.nodes[db]) # 3-a 如果 mn1 中没有这个 DB 节点，先复制过去
+                mn1_G.add_node(db, **mn2_G.nodes[db])
 
                 mn1_G.nodes[em].update(mn2_G.nodes[em])
-                mn1_G.nodes[db].update(mn2_G.nodes[db]) # 3-b 把 DB 节点的属性更新成 mn2_G 里的最新值
+                mn1_G.nodes[db].update(mn2_G.nodes[db])
 
-                mn1_G.add_edge(db, em, **mn2_G[db][em]) # 3-c 把 mn2_G 里 (DB, Ematch) 这条边也搬到 mn1_G （若已存在则覆盖属性）
+                mn1_G.add_edge(db, em, **mn2_G[db][em])
     # Save
-    mn1_out_file = os.path.join(parent_folder,f'{mn1_name}——{mn2_name}')
+    mn1_out_file = os.path.join(parent_folder,f'{mn1_name}——{mn2_name}.graphml')
     nx.write_graphml(mn1_G, mn1_out_file)
-
-    # print(basename)
-    # print('')
 
 if __name__ == '__main__':
     t = time.time()
     args = config.args
-    # args.mn1_file = './msdb/data/kutz/KutzOsmac_result/KutzOsmac_entropy_modified_cosine_0.72_3.graphml'
-    # args.mn2_file =  './msdb/data/kutz/KutzOsmac_result/KutzOsmac_peak_percentage_modified_cosine_0.72_3.graphml'
     mn_merge(args)
 
 
