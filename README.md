@@ -57,7 +57,7 @@ python customizing.py -m ./example/exampleDB.mgf -li ./example/exampleDB.xlsx -o
 python mn.py -m ./example/example.mgf -o ./example/ -e1f ./msdb/exampleDB_ms1.csv -e2f ./msdb/exampleDB_ms2.json
 ```
 
-- `merging.py`
+- `multimerging.py `
 for merging different molecular networks
 
 ```bash
