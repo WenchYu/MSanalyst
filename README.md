@@ -1,16 +1,24 @@
 # MSanalyst
-This repository contains the original source code of MSanalyst. 
+This repository contains the source code of MSanalyst. 
 ![MSanalystlogo](MSanalyst_logo.jpg)
 
 # Installation
 You can use the [online version](https://msanalyst.net/) or install the stand-alone version from this repository
 ```bash
-# Downloading msanalyst library using the command or manually
+# Downloading msanalyst library using the command 
 gdown --id 1w6HF3w1KIJlTz_QaVqqtN1BzkGDhDgzw
+
+or manually from [Google Drive](https://drive.google.com/file/d/1w6HF3w1KIJlTz_QaVqqtN1BzkGDhDgzw/view) or [Zenodo](https://zenodo.org/records/17088906)
 
 # Cloning MSanalyst repository
 git clone git@github.com:WenchYu/MSanalyst.git && cd MSanalyst
 unzip msdb.zip -d ./ && rm msdb.zip
+
+`
+MSanalyst/
+    └── msdb/
+`
+
 
 # Creating environment
 conda create -n msanalyst python=3.8
