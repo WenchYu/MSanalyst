@@ -16,7 +16,7 @@ or https://zenodo.org/records/17088906
 git clone git@github.com:WenchYu/MSanalyst.git && cd MSanalyst
 unzip msdb.zip -d ./ && rm msdb.zip
 
-
+The path of msdb relative to msanalyst should be:
 MSanalyst/
     └── msdb/
 
