@@ -8,16 +8,17 @@ You can use the [online version](https://msanalyst.net/) or install the stand-al
 # Downloading msanalyst library using the command 
 gdown --id 1w6HF3w1KIJlTz_QaVqqtN1BzkGDhDgzw
 
-or manually from [Google Drive](https://drive.google.com/file/d/1w6HF3w1KIJlTz_QaVqqtN1BzkGDhDgzw/view) or [Zenodo](https://zenodo.org/records/17088906)
+or manually from https://drive.google.com/file/d/1w6HF3w1KIJlTz_QaVqqtN1BzkGDhDgzw/view 
+
+or https://zenodo.org/records/17088906
 
 # Cloning MSanalyst repository
 git clone git@github.com:WenchYu/MSanalyst.git && cd MSanalyst
 unzip msdb.zip -d ./ && rm msdb.zip
 
-`
+
 MSanalyst/
     └── msdb/
-`
 
 
 # Creating environment
@@ -79,7 +80,7 @@ python multimerging.py -mn1 ./example/example_result/example_modified_cosine_mod
 Please see the following links for detailed instructions, parameter usage and more information.
 - [Online documentation](https://msanalyst.net/a/about) 
 - [Video tutorials](https://msanalyst.net/a/about)
-- [MSanalyst library](https://drive.google.com/file/d/1w6HF3w1KIJlTz_QaVqqtN1BzkGDhDgzw/view)
+- MSanalyst library can be downloaded at [Google drive](https://drive.google.com/file/d/1w6HF3w1KIJlTz_QaVqqtN1BzkGDhDgzw/view) or [Zenodo](https://zenodo.org/records/17088906)
 
 # 
 MSanalyst was carefully tested, bugs may appear. Don't hesitate to contact us or open an issue. 
