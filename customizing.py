@@ -5,74 +5,76 @@ Customized mass database
 import os
 import json
 import pandas as pd
-from my_packages import functions, config
+import numpy as np
+from my_packages import functions, config,functions_new
+from matchms.exporting import save_as_mgf
+from matchms import Spectrum
 
 def customized_db(args):
     '''
     args.mgf_file
     args.library_info
     '''
-    out_dir = args.output
-    if not os.path.exists(out_dir): # Create output directory
+    '''Specify output'''
+    out_dir = args.output  # Create output directory or skip if exists
+    if not os.path.exists(out_dir):
         os.makedirs(out_dir)
     else:
         pass
+    '''Load files for creating database'''
+    mgf_csv = args.library_info  # related csv file
+    mgf = args.spectra_file
 
-    '''file upload and preprocess'''
-    mgf = args.mgf_file
-    feature = args.library_info
-    ids = functions.ex_startswith(mgf, start_txt='FEATURE_ID=')
-    ids = [f"cus{ID}" for ID in ids]
-    pepmasses = functions.ex_startswith(mgf, start_txt='PEPMASS=')
-    charges = functions.ex_startswith(mgf, start_txt='CHARGE=')
-    ionmodes = ['positive' if charge.endswith('+') else 'negative' for charge in charges]
-    ms2s = functions.ex_spectra(mgf, start_txt='MSLEVEL=2', end_txt='END IONS')
+    SPECTRA = functions_new.load_spectra_from_file(mgf)
+    # Columns: ['compound_name', 'feature_ID', 'smiles', 'collector', 'adduct','organism', 'pepmass']
+    DF = functions_new.df_preprocess(mgf_csv)
 
-    df = functions.df_preprocess(feature)
-    smiles = df.smiles.tolist()
-    compound_names = df.compound_name.tolist()
+    ms1_df = pd.DataFrame(columns=['id', 'pepmass', 'smiles'])  # To create ms1 file
+    ms2_data = {}  # To create ms2 file
 
-    '''MS1 database generating'''
-    ms1_df = pd.DataFrame({
-        'id': ids,
-        'pepmass': pepmasses,
-        'smiles': smiles
-    })
+    for index, row in DF.iterrows():
+        # For ms1_library
+        SPEC_INFO = SPECTRA[index]
+        pm = SPEC_INFO.metadata['precursor_mz']
+        ID = f"cur{row['feature_ID']}"
+        SMILE = row['smiles']
+        new_row = pd.Series({'id': ID, 'pepmass': pm, 'smiles': SMILE})
+        ms1_df = pd.concat([ms1_df, new_row.to_frame().T], ignore_index=True)
+
+        # For ms2 library
+        charge = SPEC_INFO.metadata['charge']
+        try:
+            ionmode = SPEC_INFO.metadata['ionmode']
+        except:
+            ionmode = ''
+        try:
+            compound_name = SPEC_INFO.metadata['compound_name']
+        except:
+            compound_name = ''
+
+        ms2_data[ID] = {
+            "pepmass": pm,
+            "charge": charge,
+            "ion_mode": ionmode,
+            "smiles": SMILE,
+            "compound_name": compound_name,
+            "ms2": np.column_stack((SPEC_INFO.mz, SPEC_INFO.intensities)).tolist()}
+
+    # Save ms1_df
     base_filename = os.path.splitext(os.path.basename(mgf))[0]
     ms1_output_filename = f"{out_dir}/{base_filename}_ms1.csv"
     ms1_df.to_csv(ms1_output_filename, index=False)
 
-    '''MS2 database generating'''
-    ms2_data = {}
-    if len(ids) != len(df): raise ValueError(f"Length do not match")
-
-    for i in range(len(ids)):
-        id = ids[i]
-        pepmass = pepmasses[i]
-        charge = charges[i][0]
-        smile = smiles[i]
-        ionmode = ionmodes[i]
-        compound_name = compound_names[i]
-        ms2 = ms2s[i]
-        converted_list = [f"[{row[0]},{row[1]}]" for row in ms2]
-        result = f"[{','.join(converted_list)}]"
-
-        ms2_data[id] = {
-            "pepmass": pepmass,
-            "charge": charge,
-            "ion_mode": ionmode,
-            "smiles": smile,
-            "compound_name": compound_name,
-            "ms2": result
-        }
-
+    # Save ms2_json
     ms2_output_filename = f"{out_dir}/{base_filename}_ms2.json"
     with open(ms2_output_filename, 'w') as f:
         json.dump(ms2_data, f, indent=4, default=functions.arrary2list)
 
 if __name__ == '__main__':
+
     args = config.args
     customized_db(args)
+
 
 
 
