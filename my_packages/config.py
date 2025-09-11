@@ -9,20 +9,18 @@ def arg_parse():
     parser = argparse.ArgumentParser(
         prog="MSanalyst",
         description="MSanalyst designed for molecular networking and annotation",
-        usage="python main.py -q xxx_quant.csv -m xxx.mgf -o output_path"
+        usage="python mn.py -m xxx.mgf -o output_path"
     )
 
     '''In/output and database selecting'''
-    parser.add_argument("-q", "--quant_file", help="Quantitative table exported by MZmine",
-                             default="./example/example_quant.csv")
-    parser.add_argument("-m", "--spectra_file", help="Spectra in mgf or USI format", default="./example/example.mgf")
-    parser.add_argument("-f", "--input_folder", help="Spectra in mzML, mzXML format", default="./example/example.mgf")
+    parser.add_argument("-m", "--spectra_file", help="Spectra in mgf", default="./example/example.mgf")
+    parser.add_argument("-f", "--input_folder", help="Folder containing at least two mzML files. UmetaFlow used for preprocessing ")
     parser.add_argument("-o", "--output", help="Output path", default="./example/")
-    parser.add_argument("-e1f", "--edbms1_file", help="experimental ms1 file", default="./msdb/edbMS1.csv")
-    parser.add_argument("-e2f", "--edbms2_file", help="experimental ms2 library", default="./msdb/edb_info.json")
+    parser.add_argument("-e1f", "--edbms1_file", help="experimental ms1 library file", default="./msdb/edbMS1.csv")
+    parser.add_argument("-e2f", "--edbms2_file", help="experimental ms2 library file", default="./msdb/edb_info.json")
 
-    parser.add_argument("-i1f", "--isms1_file", help="in-silico ms1 library", default=None)
-    parser.add_argument("-i2f", "--isms2_file", help="in-silico ms2 library", default=None)
+    parser.add_argument("-i1f", "--isms1_file", help="in-silico ms1 library", default="./msdb/isdbMS1.csv")
+    parser.add_argument("-i2f", "--isms2_file", help="in-silico ms2 library", default="./msdb/isdb_info.json")
 
     '''mzML,mzXML file preprocess'''
     parser.add_argument("-nl", "--noise_level", help="Removing the noise below setting threhold", default=1e4)
@@ -33,7 +31,7 @@ def arg_parse():
                              , '--allowed_mass_tolerance'
                              , help='Allowed ppm tolerance in MS1 matching'
                              , type=float
-                             , default=5.0
+                             , default = 10.0
                              )
 
     '''Library searching parameters'''
@@ -100,7 +98,7 @@ def arg_parse():
                              , '--top_k'
                              , help='Maximum degree of a node'
                              , type=int
-                             , default=0
+                             , default= 100
                              )
 
     parser.add_argument("-qms1", "--query_ms1", help="MS1 search against entire MSanalyst library",

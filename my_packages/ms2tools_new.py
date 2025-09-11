@@ -359,7 +359,7 @@ def isms2_match(args,queryMGF=None):
     is_ms1_match_df.to_csv(is_result_path, index = None)
     print('ISMS2 matching finished!')
 
-def mn_curating(G: nx.Graph, args) -> nx.Graph:
+def mn_curating(args, G: nx.Graph) -> nx.Graph:
     """
     Limit the number of neighbors of each node to no more than topk,
     retaining the topk edges with the highest 'pair_similarity'.
@@ -388,7 +388,7 @@ def mn_curating(G: nx.Graph, args) -> nx.Graph:
 def self_clustering(args,exp_info):
     '''
 
-    :param args: args.output, args.quant_file, args.spectra_file, args.self_clustering_similarity
+    :param args: args.output, args.spectra_file, args.self_clustering_similarity
     :return:
     '''
     G = nx.MultiGraph()  # Creating undirected graph
@@ -418,7 +418,7 @@ def self_clustering(args,exp_info):
                              'edge_type': args.self_clustering_method}
                 G.add_edge(FID1, FID2, **edge_attr)
 
-    # G = mn_curating(G, args)
+    G = mn_curating(args, G)
     print('Self clustering finished!')
     return G
 
@@ -486,7 +486,6 @@ def molecular_generation(args):
 
     basename = os.path.splitext(os.path.basename(args.spectra_file))[0]
     parent_folder = f'{args.output}/{basename}_result'
-    # quant_df = functions.df_preprocess(args.quant_file)
     exp_info = functions_new.spectra_process(args.spectra_file)
 
     G = self_clustering(args,exp_info) # Networking
@@ -554,14 +553,18 @@ def molecular_generation(args):
 
     # edbms1_match_df[f'{args.library_matching_method}_similarity'] \
     #     = pd.to_numeric(edbms1_match_df[f'{args.library_matching_method}_similarity'], errors='coerce')
-
+    feature_id_type = type(feature_ids[0])
+    edbms1_match_df['row ID'] = edbms1_match_df['row ID'].astype(feature_id_type)
     edb_index_match, edb_index_unmatch = [], []
     for feature_id in feature_ids:
-        temp_df = edbms1_match_df[edbms1_match_df['row ID'] == int(feature_id)]
-        idx = temp_df[f'{args.library_matching_method}_mps'].idxmax()  # get index of match with maximum pair_similarity
-        edb_index_match.append(idx)
-    edb_index_match = [x for x in edb_index_match if pd.notna(x)] # Remove Nan
+        try:
+            temp_df = edbms1_match_df[edbms1_match_df['row ID'] == feature_id]
+            idx = temp_df[f'{args.library_matching_method}_mps'].idxmax()  # get index of match with maximum pair_similarity
+            edb_index_match.append(idx)
+        except:pass
 
+    edb_index_match = [x for x in edb_index_match if pd.notna(x)] # Remove Nan
+    print(edb_index_match)
     #     elif pd.isna(temp_df['match_id']).any():  # get index of features without MS1 match
     #         edb_index_unmatch.extend(temp_df.index.values.tolist())
 
@@ -631,5 +634,6 @@ if __name__ == '__main__':
     t = time.time()
     '''Param settings'''
     args = config.args
+
 
     print(f'Finish in {(time.time() - t) / 60:.2f}min')
