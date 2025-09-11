@@ -22,7 +22,7 @@ MSanalyst/
 
 
 # Creating environment
-conda create -n msanalyst python=3.8
+conda create -n msanalyst python=3.10
 conda activate msanalyst
 pip install -r requirements.txt
 ```

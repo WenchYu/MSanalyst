@@ -1,4 +1,3 @@
-# conda install autode --channel conda-forge
 tqdm
 numpy
 pandas
